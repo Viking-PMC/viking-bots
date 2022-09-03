@@ -1,0 +1,1 @@
+node F:\Node\voror-TS\dist\index.js
