@@ -1,1 +1,1 @@
-node F:\Node\voror-TS\dist\index.js
+node F:\Github\Viking-Bots\Voror-TS\dist\index.js
