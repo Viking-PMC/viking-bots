@@ -22,6 +22,11 @@ export const applicationSetupCommand = new SlashCommandBuilder()
       .setRequired(true)
       .addChannelTypes(ChannelType.GuildCategory)
   )
+  .addRoleOption((option) =>
+    option
+      .setName('role')
+      .setDescription('a role you want to be able to see the channel.')
+  )
   .toJSON();
 
 export const denyApplicationCommand = new SlashCommandBuilder()

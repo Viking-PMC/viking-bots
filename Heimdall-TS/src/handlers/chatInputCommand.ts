@@ -35,6 +35,18 @@ export const handleChatInputCommand = async (
   switch (interaction.commandName) {
     case 'deny':
       {
+        if (!guildId) {
+          console.log('GuildId is Null.');
+          return;
+        }
+        const applicationConfig = await applicationConfigRepository.findOneBy({
+          guildId: guildId,
+        });
+        if (!applicationConfig) {
+          console.log('No application config exists');
+          return;
+        }
+
         user = interaction.options.getMember('user') as GuildMember;
         const channel = interaction.channel as GuildTextBasedChannel;
         const application = await applicationRepository.findOneBy({
@@ -53,10 +65,10 @@ export const handleChatInputCommand = async (
             },
             {
               allow: ['ViewChannel', 'SendMessages'],
-              id: '1008506015731433654',
+              id: applicationConfig.role,
             },
             { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
-            { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
+            { deny: ['ViewChannel', 'SendMessages'], id: guildId },
           ],
         });
         await interaction.reply({
@@ -68,16 +80,24 @@ export const handleChatInputCommand = async (
                 .setLabel('Application Denied...')
                 .setEmoji('🎟')
                 .setDisabled(true),
+
               new ButtonBuilder()
                 .setCustomId('create-transcript')
                 .setStyle(ButtonStyle.Secondary)
                 .setLabel('Create a Transcript')
-                .setEmoji('💾')
+                .setEmoji('💾'),
+
+              new ButtonBuilder()
+                .setCustomId('close-app')
+                .setStyle(ButtonStyle.Danger)
+                .setLabel('Close Application')
+                .setEmoji('🎟')
             ),
           ],
         });
       }
       break;
+
     case 'tickets': {
       const messageOptions = {
         content: 'Press button to create a ticket.',
@@ -98,6 +118,8 @@ export const handleChatInputCommand = async (
         'category'
       ) as GuildTextBasedChannel;
 
+      const role = interaction.options.getRole('role');
+
       let ticketConfig = await ticketConfigRepository.findOneBy({
         guildId: guildId!,
       });
@@ -110,12 +132,16 @@ export const handleChatInputCommand = async (
             messageId: msg.id,
             channelId: channel.id,
             categoryId: category.id,
+            role: role?.id,
           });
         } else {
           const msg = await channel.send(messageOptions);
           ticketConfig.channelId = channel.id;
           ticketConfig.messageId = msg.id;
           ticketConfig.categoryId = category.id;
+          if (role) {
+            ticketConfig.role = role.id;
+          }
         }
         await ticketConfigRepository.save(ticketConfig);
         await interaction.reply({
@@ -150,6 +176,7 @@ export const handleChatInputCommand = async (
       const category = interaction.options.getChannel(
         'category'
       ) as GuildTextBasedChannel;
+      const role = interaction.options.getRole('role');
 
       let applicationConfig = await applicationConfigRepository.findOneBy({
         guildId: guildId!,
@@ -163,12 +190,16 @@ export const handleChatInputCommand = async (
             messageId: msg.id,
             channelId: channel.id,
             categoryId: category.id,
+            role: role?.id,
           });
         } else {
           const msg = await channel.send(messageOptions);
           applicationConfig.channelId = channel.id;
           applicationConfig.messageId = msg.id;
           applicationConfig.categoryId = category.id;
+          if (role) {
+            applicationConfig.role = role.id;
+          }
         }
         await applicationConfigRepository.save(applicationConfig);
         await interaction.reply({

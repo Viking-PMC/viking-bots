@@ -16,4 +16,7 @@ export class TicketConfig {
 
   @Column()
   categoryId: string;
+
+  @Column({ default: '405409164660047872' })
+  role: string;
 }

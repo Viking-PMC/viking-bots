@@ -30,9 +30,13 @@ export const handleButtonInteraction = async (
   switch (interaction.customId) {
     case 'create-ticket':
       {
+        if (!guildId) {
+          console.log('GuildId is Null.');
+          return;
+        }
         try {
           const ticketConfig = await ticketConfigRepository.findOneBy({
-            guildId: guildId || '',
+            guildId: guildId,
           });
           if (!ticketConfig) {
             console.log('No ticket config exists');
@@ -65,7 +69,7 @@ export const handleButtonInteraction = async (
             const savedTicket = await ticketRepository.save(newTicket);
 
             const newTicketChannel = await guild.channels.create({
-              name: `ticket-${savedTicket.id.toString().padStart(6, '0')}`,
+              name: `ticket-${savedTicket.id.toString()}`,
               type: ChannelType.GuildText,
               parent: ticketConfig.categoryId,
               permissionOverwrites: [
@@ -76,9 +80,9 @@ export const handleButtonInteraction = async (
                 { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
                 {
                   allow: ['ViewChannel', 'SendMessages'],
-                  id: '1008476277675671663',
+                  id: ticketConfig.role,
                 },
-                { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
+                { deny: ['ViewChannel', 'SendMessages'], id: guildId },
               ],
             });
             const newTicketMessage = await newTicketChannel.send({
@@ -131,7 +135,7 @@ export const handleButtonInteraction = async (
         await channel.delete();
       } else {
         await interaction.reply({
-          content: 'This option is for the new user and Tech only.',
+          content: 'This option is for the ticket creator and Tech only.',
           ephemeral: true,
         });
       }
@@ -141,19 +145,22 @@ export const handleButtonInteraction = async (
 
     case 'open-app':
       {
+        if (!guild) {
+          console.log('Guild is Null.');
+          return;
+        }
+        if (!guildId) {
+          console.log('GuildId is Null.');
+          return;
+        }
         try {
           const applicationConfig = await applicationConfigRepository.findOneBy(
             {
-              guildId: guildId || '',
+              guildId: guildId,
             }
           );
           if (!applicationConfig) {
             console.log('No application config exists');
-            return;
-          }
-
-          if (!guild) {
-            console.log('Guild is Null.');
             return;
           }
 
@@ -191,22 +198,13 @@ export const handleButtonInteraction = async (
                 { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
                 {
                   allow: ['ViewChannel', 'SendMessages'],
-                  id: '1008506015731433654',
+                  id: applicationConfig.role,
                 },
-                { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
+                { deny: ['ViewChannel', 'SendMessages'], id: guildId },
               ],
             });
             const newApplicationMessage = await newApplicationChannel.send({
-              content: 'Application Menu',
-              components: [
-                new ActionRowBuilder<ButtonBuilder>().setComponents(
-                  new ButtonBuilder()
-                    .setCustomId('close-app')
-                    .setStyle(ButtonStyle.Danger)
-                    .setLabel('Close Application')
-                    .setEmoji('🎟')
-                ),
-              ],
+              content: '[APPLICATION INSTRUCTIONS]',
             });
             applicationRepository.update(
               { id: savedApplication.id },
@@ -225,55 +223,43 @@ export const handleButtonInteraction = async (
         } catch (error) {
           console.log(error);
           await interaction.reply({
-            content: 'There was an error creating the ticket.',
+            content: 'There was an error creating the application.',
             ephemeral: true,
           });
         }
       }
       break;
     case 'close-app': {
-      const user = interaction.user;
       const channel = interaction.channel as GuildTextBasedChannel;
-      const application = await applicationRepository.findOneBy({ channelId });
-      if (!application) return console.log("Application wasn't found");
 
-      if (user.id === application.createdBy) {
-        await ticketRepository.update(
-          { id: application.id },
-          { status: 'closed' }
-        );
-        await channel.edit({
-          permissionOverwrites: [
-            {
-              deny: ['ViewChannel', 'SendMessages'],
-              id: interaction.user.id,
-            },
-            {
-              allow: ['ViewChannel', 'SendMessages'],
-              id: '1008506015731433654',
-            },
-            { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
-            { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
-          ],
-        });
-        await interaction.update({
-          components: [
-            new ActionRowBuilder<ButtonBuilder>().setComponents(
-              new ButtonBuilder()
-                .setCustomId('close-app')
-                .setStyle(ButtonStyle.Danger)
-                .setLabel('Application Closed...')
-                .setEmoji('🎟')
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('create-transcript')
-                .setStyle(ButtonStyle.Secondary)
-                .setLabel('Create a Transcript')
-                .setEmoji('💾')
-            ),
-          ],
-        });
+      if (!guildId) {
+        console.log('GuildId is Null.');
+        return;
       }
+
+      const applicationConfig = await applicationConfigRepository.findOneBy({
+        guildId: guildId,
+      });
+      if (!applicationConfig) {
+        console.log('No application config exists');
+        await interaction.reply({
+          content: 'No Application Config exists.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const application = await applicationRepository.findOneBy({ channelId });
+      if (!application) {
+        console.log("Application wasn't found");
+        await interaction.reply({
+          content: 'The application was not found.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await channel.delete();
 
       break;
     }
