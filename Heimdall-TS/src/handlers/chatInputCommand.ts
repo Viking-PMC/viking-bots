@@ -71,6 +71,7 @@ export const handleChatInputCommand = async (
             { deny: ['ViewChannel', 'SendMessages'], id: guildId },
           ],
         });
+
         await interaction.reply({
           components: [
             new ActionRowBuilder<ButtonBuilder>().setComponents(
@@ -98,6 +99,70 @@ export const handleChatInputCommand = async (
       }
       break;
 
+    case 'accept':
+      {
+        if (!guildId) {
+          console.log('GuildId is Null.');
+          return;
+        }
+        const applicationConfig = await applicationConfigRepository.findOneBy({
+          guildId: guildId,
+        });
+        if (!applicationConfig) {
+          console.log('No application config exists');
+          return;
+        }
+
+        user = interaction.options.getMember('user') as GuildMember;
+        const channel = interaction.channel as GuildTextBasedChannel;
+        const application = await applicationRepository.findOneBy({
+          channelId,
+        });
+
+        await applicationRepository.update(
+          { id: application!.id },
+          { status: 'accepted' }
+        );
+        await channel.edit({
+          permissionOverwrites: [
+            {
+              deny: ['ViewChannel', 'SendMessages'],
+              id: user.id,
+            },
+            {
+              allow: ['ViewChannel', 'SendMessages'],
+              id: applicationConfig.role,
+            },
+            { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
+            { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+          ],
+        });
+        await interaction.reply({
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().setComponents(
+              new ButtonBuilder()
+                .setCustomId('deny-app')
+                .setStyle(ButtonStyle.Danger)
+                .setLabel('Application Denied...')
+                .setEmoji('🎟')
+                .setDisabled(true),
+
+              new ButtonBuilder()
+                .setCustomId('create-transcript')
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel('Create a Transcript')
+                .setEmoji('💾'),
+
+              new ButtonBuilder()
+                .setCustomId('close-app')
+                .setStyle(ButtonStyle.Danger)
+                .setLabel('Close Application')
+                .setEmoji('🎟')
+            ),
+          ],
+        });
+      }
+      break;
     case 'tickets': {
       const messageOptions = {
         content: 'Press button to create a ticket.',
