@@ -6,6 +6,7 @@ import {
   CacheType,
   ChannelType,
   Client,
+  GuildMember,
   GuildMemberRoleManager,
   GuildTextBasedChannel,
 } from 'discord.js';
@@ -229,6 +230,132 @@ export const handleButtonInteraction = async (
         }
       }
       break;
+
+    case 'decline-welcome':
+      {
+        const user = interaction.user;
+        const channel = interaction.channel as GuildTextBasedChannel;
+
+        const application = await applicationRepository.findOneBy({
+          channelId,
+        });
+        if (!guildId) {
+          console.log('GuildId is Null.');
+          return;
+        }
+        const applicationConfig = await applicationConfigRepository.findOneBy({
+          guildId: guildId,
+        });
+        if (!applicationConfig) {
+          console.log('No application config exists');
+          return;
+        }
+
+        if (user.id === application?.createdBy) {
+          await applicationRepository.update(
+            { id: application.id },
+            { status: 'denied' }
+          );
+          await channel.edit({
+            permissionOverwrites: [
+              {
+                deny: ['ViewChannel', 'SendMessages'],
+                id: user.id,
+              },
+              {
+                allow: ['ViewChannel', 'SendMessages'],
+                id: applicationConfig.role,
+              },
+              { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
+              { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+            ],
+          });
+          await channel.send({
+            content: `${user.tag} Declined to join.`,
+            components: [
+              new ActionRowBuilder<ButtonBuilder>().setComponents(
+                new ButtonBuilder()
+                  .setCustomId('close-app')
+                  .setStyle(ButtonStyle.Danger)
+                  .setLabel('Close Room')
+                  .setEmoji('🎟')
+              ),
+            ],
+          });
+          await interaction.reply({ content: ' ' });
+          await interaction.deleteReply();
+        } else
+          await interaction.reply({
+            content: 'This option is for the application creator only.',
+            ephemeral: true,
+          });
+      }
+      break;
+
+    case 'accept-welcome':
+      {
+        const user = interaction.user;
+        const channel = interaction.channel as GuildTextBasedChannel;
+
+        const application = await applicationRepository.findOneBy({
+          channelId,
+        });
+        if (!guildId) {
+          console.log('GuildId is Null.');
+          return;
+        }
+        const applicationConfig = await applicationConfigRepository.findOneBy({
+          guildId: guildId,
+        });
+        if (!applicationConfig) {
+          console.log('No application config exists');
+          return;
+        }
+
+        if (user.id === application?.createdBy) {
+          await applicationRepository.update(
+            { id: application.id },
+            { status: 'accepted' }
+          );
+          await channel.edit({
+            permissionOverwrites: [
+              {
+                deny: ['ViewChannel', 'SendMessages'],
+                id: user.id,
+              },
+              {
+                allow: ['ViewChannel', 'SendMessages'],
+                id: applicationConfig.role,
+              },
+              { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
+              { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+            ],
+          });
+          const userAsGuildMember = guild?.members.cache.get(user.id);
+
+          userAsGuildMember?.roles.add('856960955706769423');
+          await channel.send({
+            content: `${user.tag} Accepted.`,
+            components: [
+              new ActionRowBuilder<ButtonBuilder>().setComponents(
+                new ButtonBuilder()
+                  .setCustomId('close-app')
+                  .setStyle(ButtonStyle.Danger)
+                  .setLabel('Close Room')
+                  .setEmoji('🎟')
+              ),
+            ],
+          });
+          await interaction.reply({ content: ' ' });
+          await interaction.deleteReply();
+        } else
+          await interaction.reply({
+            content: 'This option is for the application creator only.',
+            ephemeral: true,
+          });
+      }
+      break;
+
     case 'close-app': {
       const channel = interaction.channel as GuildTextBasedChannel;
 

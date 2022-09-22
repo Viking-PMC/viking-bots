@@ -114,7 +114,6 @@ export const handleChatInputCommand = async (
         }
 
         user = interaction.options.getMember('user') as GuildMember;
-        const channel = interaction.channel as GuildTextBasedChannel;
         const application = await applicationRepository.findOneBy({
           channelId,
         });
@@ -123,41 +122,21 @@ export const handleChatInputCommand = async (
           { id: application!.id },
           { status: 'accepted' }
         );
-        await channel.edit({
-          permissionOverwrites: [
-            {
-              deny: ['ViewChannel', 'SendMessages'],
-              id: user.id,
-            },
-            {
-              allow: ['ViewChannel', 'SendMessages'],
-              id: applicationConfig.role,
-            },
-            { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
-            { deny: ['ViewChannel', 'SendMessages'], id: guildId },
-          ],
-        });
+
         await interaction.reply({
+          content:
+            'Your application was accepted! To continue forward please read through this. Accepting this means you agree to our terms and conditions outlined above.',
           components: [
             new ActionRowBuilder<ButtonBuilder>().setComponents(
               new ButtonBuilder()
-                .setCustomId('deny-app')
-                .setStyle(ButtonStyle.Danger)
-                .setLabel('Application Denied...')
-                .setEmoji('🎟')
-                .setDisabled(true),
+                .setCustomId('accept-welcome')
+                .setStyle(ButtonStyle.Success)
+                .setLabel('Accept'),
 
               new ButtonBuilder()
-                .setCustomId('create-transcript')
-                .setStyle(ButtonStyle.Secondary)
-                .setLabel('Create a Transcript')
-                .setEmoji('💾'),
-
-              new ButtonBuilder()
-                .setCustomId('close-app')
+                .setCustomId('decline-welcome')
                 .setStyle(ButtonStyle.Danger)
-                .setLabel('Close Application')
-                .setEmoji('🎟')
+                .setLabel('Decline')
             ),
           ],
         });
