@@ -5,9 +5,8 @@ import {
   GuildMember,
   GuildMemberRoleManager,
   PermissionsBitField,
-  Role,
 } from 'discord.js';
-import { RolesCache, updateRolesType } from '../utils/Types';
+import { updateRolesType } from '../utils/Types';
 
 const checkIfRoleOrAdmin = (
   interaction: ContextMenuCommandInteraction,
@@ -24,74 +23,103 @@ const checkIfRoleOrAdmin = (
   }
 };
 
-const rolesCache: RolesCache = {};
-rolesCache['new user'] = { promote: '856960955706769423', demote: null };
-rolesCache['trial'] = {
-  promote: '1009252378341539951',
-  demote: '1002971301130014790',
+const ranks = [
+  { key: 'new user', value: 0 },
+  { key: 'Trial', value: 1 },
+  { key: 'Recruit', value: 2 },
+  { key: 'Viking', value: 3 },
+  { key: 'Marauder', value: 4 },
+  { key: 'Berserker', value: 5 },
+  { key: 'Valkyrie', value: 6 },
+  { key: 'Vanir', value: 7 },
+  { key: 'Aesir', value: 8 },
+  { key: 'Hersir', value: 9 },
+  { key: 'Jarl', value: 10 },
+];
+const getRank = (member: GuildMember) => {
+  const memberRanks = member.roles.cache.filter((role) =>
+    ranks.some((r) => r.key === role.name)
+  );
+
+  if (memberRanks.size === 0) return 0;
+
+  let currentHighest = 0;
+
+  memberRanks.forEach((role) => {
+    const currentRoleValue = ranks.find((r) => r.key === role.name)?.value!;
+
+    if (currentRoleValue > currentHighest) {
+      currentHighest = currentRoleValue;
+    }
+  });
+  return currentHighest;
 };
 
 const updateRoles = async (
   interaction: ContextMenuCommandInteraction<CacheType>,
-  rCache: RolesCache,
   type: updateRolesType
 ) => {
   const user = interaction.options.getMember('user') as GuildMember;
-  let oldRole: Role | null = null;
-  let promote: string | null = null;
-  let demote: string | null = null;
-  const BreakError = {};
+  let oldRoleValue: number;
 
-  try {
-    user.roles.cache.forEach((role) => {
-      switch (role.name) {
-        case 'new user': {
-          oldRole = role;
-          promote = rCache['new user'].promote;
-          throw BreakError;
-        }
-        case 'trial': {
-          oldRole = role;
-          promote = rCache['trial'].promote;
-          demote = rCache['trial'].demote;
-          throw BreakError;
-        }
-      }
-    });
-  } catch (error) {
-    if (error !== BreakError) {
-      console.log(error);
-      await interaction.reply({
-        content: 'There was an error promoting the user.',
-        ephemeral: true,
-      });
-    }
-  }
-  if (!oldRole) {
+  const guildRanks = interaction.guild?.roles.cache.filter((role) =>
+    ranks.some((r) => r.key === role.name)
+  );
+
+  oldRoleValue = getRank(user);
+
+  if (oldRoleValue === undefined) {
     await interaction.reply({
       content: `The user had no applicable role.`,
       ephemeral: true,
     });
     return;
   }
-  if (type === 'demote' && demote) {
-    user.roles.add(demote);
-    user.roles.remove(oldRole);
+  if (type === 'demote') {
+    if (oldRoleValue < 1) {
+      await interaction.reply({
+        content: `This user cannot be demoted any lower.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    const newRole = guildRanks?.find(
+      (g) => g.name === ranks[oldRoleValue - 1].key
+    )!;
+
+    user.roles.add(newRole);
+    user.roles.remove(
+      guildRanks?.find((g) => g.name === ranks[oldRoleValue].key)!
+    );
+
     await interaction.reply({
-      allowedMentions: { roles: [demote] },
+      allowedMentions: { roles: [newRole.id] },
       content: `${interaction.options.getMember(
         'user'
-      )} has been demoted to <@&${demote}>`,
+      )} has been demoted to ${newRole}`,
       ephemeral: true,
     });
-  } else if (type === 'promote' && promote) {
-    user.roles.add(promote);
-    user.roles.remove(oldRole);
+  } else if (type === 'promote') {
+    if (oldRoleValue === 3) {
+      await interaction.reply({
+        content: `This user cannot be promoted any higher.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    const newRole = guildRanks?.find(
+      (g) => g.name === ranks[oldRoleValue + 1].key
+    )!;
+
+    user.roles.add(newRole);
+    user.roles.remove(
+      guildRanks?.find((g) => g.name === ranks[oldRoleValue].key)!
+    );
     await interaction.reply({
-      allowedMentions: { roles: [promote] },
+      allowedMentions: { roles: [newRole.id] },
       content: `${interaction.options.getMember(
         'user'
-      )} has been promoted to <@&${promote}>`,
+      )} has been promoted to ${newRole}`,
       ephemeral: true,
     });
   }
@@ -103,7 +131,7 @@ export const handleContextMenuInteraction = async (
 ) => {
   switch (interaction.commandName) {
     case 'welcome':
-      if (checkIfRoleOrAdmin(interaction, 'Personnel')) {
+      if (!checkIfRoleOrAdmin(interaction, 'Personnel')) {
         await interaction.reply({
           content: `You aren't authorised to use that command!`,
           ephemeral: true,
@@ -117,14 +145,14 @@ export const handleContextMenuInteraction = async (
 
     case 'promote':
     case 'demote': {
-      if (checkIfRoleOrAdmin(interaction, 'Personnel')) {
+      if (!checkIfRoleOrAdmin(interaction, 'Personnel')) {
         await interaction.reply({
           content: `You aren't authorised to use that command!`,
           ephemeral: true,
         });
         return;
       }
-      updateRoles(interaction, rolesCache, interaction.commandName);
+      updateRoles(interaction, interaction.commandName);
       break;
     }
     default:
