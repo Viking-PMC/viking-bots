@@ -25,7 +25,7 @@ const checkIfRoleOrAdmin = (
 };
 
 const rolesCache: RolesCache = {};
-rolesCache['new user'] = { promote: '1002971376845594674', demote: null };
+rolesCache['new user'] = { promote: '856960955706769423', demote: null };
 rolesCache['trial'] = {
   promote: '1009252378341539951',
   demote: '1002971301130014790',

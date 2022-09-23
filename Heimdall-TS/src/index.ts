@@ -15,6 +15,7 @@ import { welcomeCommand } from './commands/welcome';
 import { demoteCommand, promoteCommand, rolesCommand } from './commands/roles';
 import { handleContextMenuInteraction } from './handlers/contextMenuInteraction';
 import {
+  acceptApplicationCommand,
   applicationSetupCommand,
   denyApplicationCommand,
 } from './commands/Applications';
@@ -48,6 +49,7 @@ const commands: RESTPostAPIApplicationCommandsJSONBody[] = [
   demoteCommand,
   applicationSetupCommand,
   denyApplicationCommand,
+  acceptApplicationCommand,
 ];
 
 client.once('ready', () => console.log(`${client.user?.tag} logged in`));

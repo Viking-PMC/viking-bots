@@ -6,5 +6,5 @@ export const AppDataSource = new DataSource({
   type: 'mongodb',
   url: process.env.MONGO_URI,
   synchronize: true,
-  entities: ['src/entities/*.ts'],
+  entities: [__dirname + '/entities/*.{ts,js}'],
 });
