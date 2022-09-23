@@ -282,7 +282,9 @@ export const handleButtonInteraction = async (
               ),
             ],
           });
-          await interaction.reply({ content: ' ' });
+          await interaction.reply({
+            content: 'Processing...',
+          });
           await interaction.deleteReply();
         } else
           await interaction.reply({
@@ -346,7 +348,9 @@ export const handleButtonInteraction = async (
               ),
             ],
           });
-          await interaction.reply({ content: ' ' });
+          await interaction.reply({
+            content: 'Processing...',
+          });
           await interaction.deleteReply();
         } else
           await interaction.reply({
