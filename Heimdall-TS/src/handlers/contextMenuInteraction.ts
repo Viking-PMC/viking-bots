@@ -6,6 +6,7 @@ import {
   GuildMemberRoleManager,
   PermissionsBitField,
 } from 'discord.js';
+import { getRank, getRanks } from '../utils/Helpers';
 import { updateRolesType } from '../utils/Types';
 
 const checkIfRoleOrAdmin = (
@@ -23,50 +24,19 @@ const checkIfRoleOrAdmin = (
   }
 };
 
-const ranks = [
-  { key: 'new user', value: 0 },
-  { key: 'Trial', value: 1 },
-  { key: 'Recruit', value: 2 },
-  { key: 'Viking', value: 3 },
-  { key: 'Marauder', value: 4 },
-  { key: 'Berserker', value: 5 },
-  { key: 'Valkyrie', value: 6 },
-  { key: 'Vanir', value: 7 },
-  { key: 'Aesir', value: 8 },
-  { key: 'Hersir', value: 9 },
-  { key: 'Jarl', value: 10 },
-];
-const getRank = (member: GuildMember) => {
-  const memberRanks = member.roles.cache.filter((role) =>
-    ranks.some((r) => r.key === role.name)
-  );
-
-  if (memberRanks.size === 0) return 0;
-
-  let currentHighest = 0;
-
-  memberRanks.forEach((role) => {
-    const currentRoleValue = ranks.find((r) => r.key === role.name)?.value!;
-
-    if (currentRoleValue > currentHighest) {
-      currentHighest = currentRoleValue;
-    }
-  });
-  return currentHighest;
-};
-
 const updateRoles = async (
   interaction: ContextMenuCommandInteraction<CacheType>,
   type: updateRolesType
 ) => {
+  let ranks: { name: string; value: number }[] = await getRanks();
   const user = interaction.options.getMember('user') as GuildMember;
   let oldRoleValue: number;
 
   const guildRanks = interaction.guild?.roles.cache.filter((role) =>
-    ranks.some((r) => r.key === role.name)
+    ranks.some((r) => r.name === role.name)
   );
 
-  oldRoleValue = getRank(user);
+  oldRoleValue = await getRank(user, ranks);
 
   if (oldRoleValue === undefined) {
     await interaction.reply({
@@ -84,12 +54,12 @@ const updateRoles = async (
       return;
     }
     const newRole = guildRanks?.find(
-      (g) => g.name === ranks[oldRoleValue - 1].key
+      (g) => g.name === ranks[oldRoleValue - 1].name
     )!;
 
     user.roles.add(newRole);
     user.roles.remove(
-      guildRanks?.find((g) => g.name === ranks[oldRoleValue].key)!
+      guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
     );
 
     await interaction.reply({
@@ -100,7 +70,7 @@ const updateRoles = async (
       ephemeral: true,
     });
   } else if (type === 'promote') {
-    if (oldRoleValue === 3) {
+    if (oldRoleValue === ranks.length - 1) {
       await interaction.reply({
         content: `This user cannot be promoted any higher.`,
         ephemeral: true,
@@ -108,12 +78,12 @@ const updateRoles = async (
       return;
     }
     const newRole = guildRanks?.find(
-      (g) => g.name === ranks[oldRoleValue + 1].key
+      (g) => g.name === ranks[oldRoleValue + 1].name
     )!;
 
     user.roles.add(newRole);
     user.roles.remove(
-      guildRanks?.find((g) => g.name === ranks[oldRoleValue].key)!
+      guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
     );
     await interaction.reply({
       allowedMentions: { roles: [newRole.id] },
@@ -153,6 +123,7 @@ export const handleContextMenuInteraction = async (
         return;
       }
       updateRoles(interaction, interaction.commandName);
+
       break;
     }
     default:

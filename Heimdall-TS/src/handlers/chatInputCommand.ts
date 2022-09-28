@@ -5,16 +5,20 @@ import {
   CacheType,
   ChatInputCommandInteraction,
   Client,
+  EmbedBuilder,
   GuildMember,
   GuildTextBasedChannel,
   Role,
+  TextChannel,
 } from 'discord.js';
-import { applicationContent } from '../schema/application';
+import { applicationAccepted, applicationContent } from '../schema/application';
 
 import { AppDataSource } from '../typeorm';
 import { Application } from '../typeorm/entities/Application';
 import { ApplicationConfig } from '../typeorm/entities/ApplicationConfig';
+import { GuildConfig } from '../typeorm/entities/GuildConfig';
 import { TicketConfig } from '../typeorm/entities/TicketConfig';
+import { isDefined } from '../utils/Helpers';
 
 const ticketConfigRepository = AppDataSource.getRepository(TicketConfig);
 const applicationConfigRepository =
@@ -22,55 +26,77 @@ const applicationConfigRepository =
 
 const applicationRepository = AppDataSource.getRepository(Application);
 
+const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
+
 export const handleChatInputCommand = async (
   client: Client,
   interaction: ChatInputCommandInteraction<CacheType>
 ) => {
-  if (!interaction) {
-    return console.log('No interaction was received...');
-  }
-  let user: GuildMember;
+  let guildMember: GuildMember;
 
   const { guildId, channelId } = interaction;
+
+  if (!isDefined(guildId)) {
+    console.log('GuildId is Null.');
+    await interaction.reply({
+      content: 'This bot is likely not registered to this server.',
+      ephemeral: true,
+    });
+    return;
+  }
+  let applicationConfig = await applicationConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let guildConfig = await guildConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let ticketConfig = await ticketConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let application = await applicationRepository.findOneBy({
+    channelId,
+  });
+
   switch (interaction.commandName) {
     case 'deny':
       {
-        if (!guildId) {
-          console.log('GuildId is Null.');
-          return;
-        }
-        const applicationConfig = await applicationConfigRepository.findOneBy({
-          guildId: guildId,
-        });
         if (!applicationConfig) {
-          console.log('No application config exists');
+          await interaction.reply({
+            content: 'This server has not set up the application system yet.',
+            ephemeral: true,
+          });
           return;
         }
-
-        user = interaction.options.getMember('user') as GuildMember;
         const channel = interaction.channel as GuildTextBasedChannel;
-        const application = await applicationRepository.findOneBy({
-          channelId,
-        });
+
+        if (!application) {
+          await interaction.reply({
+            content: 'This channel is not an application channel.',
+            ephemeral: true,
+          });
+          return;
+        }
 
         await applicationRepository.update(
-          { id: application!.id },
+          { id: application.id },
           { status: 'denied' }
         );
-        await channel.edit({
-          permissionOverwrites: [
-            {
-              deny: ['ViewChannel', 'SendMessages'],
-              id: user.id,
-            },
-            {
-              allow: ['ViewChannel', 'SendMessages'],
-              id: applicationConfig.role,
-            },
-            { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
-            { deny: ['ViewChannel', 'SendMessages'], id: guildId },
-          ],
-        });
+
+        if (isDefined(client.user)) {
+          await channel.edit({
+            permissionOverwrites: [
+              {
+                allow: ['ViewChannel', 'SendMessages'],
+                id: applicationConfig.role,
+              },
+              { allow: ['ViewChannel', 'SendMessages'], id: client.user.id },
+              { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+            ],
+          });
+        }
 
         await interaction.reply({
           components: [
@@ -101,31 +127,29 @@ export const handleChatInputCommand = async (
 
     case 'accept':
       {
-        if (!guildId) {
-          console.log('GuildId is Null.');
-          return;
-        }
-        const applicationConfig = await applicationConfigRepository.findOneBy({
-          guildId: guildId,
-        });
         if (!applicationConfig) {
-          console.log('No application config exists');
+          await interaction.reply({
+            content: 'This server has not set up the application system yet.',
+            ephemeral: true,
+          });
           return;
         }
 
-        user = interaction.options.getMember('user') as GuildMember;
-        const application = await applicationRepository.findOneBy({
-          channelId,
-        });
+        if (!application) {
+          await interaction.reply({
+            content: 'This channel is not an application channel.',
+            ephemeral: true,
+          });
+          return;
+        }
 
         await applicationRepository.update(
-          { id: application!.id },
+          { id: application.id },
           { status: 'accepted' }
         );
 
         await interaction.reply({
-          content:
-            'Your application was accepted! To continue forward please read through this. Accepting this means you agree to our terms and conditions outlined above.',
+          content: applicationAccepted,
           components: [
             new ActionRowBuilder<ButtonBuilder>().setComponents(
               new ButtonBuilder()
@@ -143,6 +167,13 @@ export const handleChatInputCommand = async (
       }
       break;
     case 'tickets': {
+      if (!guildConfig) {
+        console.log(
+          'No Guild config exists, make sure to register the Guild First.'
+        );
+        return;
+      }
+
       const messageOptions = {
         content: 'Press button to create a ticket.',
         components: [
@@ -164,15 +195,11 @@ export const handleChatInputCommand = async (
 
       const role = interaction.options.getRole('role');
 
-      let ticketConfig = await ticketConfigRepository.findOneBy({
-        guildId: guildId!,
-      });
-
       try {
         if (!ticketConfig) {
           const msg = await channel.send(messageOptions);
           ticketConfig = ticketConfigRepository.create({
-            guildId: guildId!,
+            guildId: guildId,
             messageId: msg.id,
             channelId: channel.id,
             categoryId: category.id,
@@ -192,6 +219,24 @@ export const handleChatInputCommand = async (
           content: 'Ticket System Initialized.',
           ephemeral: true,
         });
+
+        const log = client.channels.cache.get(
+          guildConfig.logChannelId
+        ) as TextChannel;
+
+        log.send({
+          embeds: [
+            new EmbedBuilder()
+              .setColor(0x2ecc71)
+              .setTitle('Ticket System initialized')
+              .setAuthor({
+                name: interaction.user.tag,
+                iconURL: interaction.user.avatarURL()!,
+              })
+              .setTimestamp()
+              .setFooter({ text: 'Command Used: /tickets' }),
+          ],
+        });
       } catch (error) {
         console.log(error);
         await interaction.reply({
@@ -202,6 +247,12 @@ export const handleChatInputCommand = async (
       break;
     }
     case 'applications': {
+      if (!guildConfig) {
+        console.log(
+          'No Guild config exists, make sure to register the Guild First.'
+        );
+        return;
+      }
       const messageOptions = {
         content: applicationContent,
         components: [
@@ -222,15 +273,11 @@ export const handleChatInputCommand = async (
       ) as GuildTextBasedChannel;
       const role = interaction.options.getRole('role');
 
-      let applicationConfig = await applicationConfigRepository.findOneBy({
-        guildId: guildId!,
-      });
-
       try {
         if (!applicationConfig) {
           const msg = await channel.send(messageOptions);
           applicationConfig = applicationConfigRepository.create({
-            guildId: guildId!,
+            guildId: guildId,
             messageId: msg.id,
             channelId: channel.id,
             categoryId: category.id,
@@ -250,6 +297,23 @@ export const handleChatInputCommand = async (
           content: 'Application System Initialized.',
           ephemeral: true,
         });
+        const log = client.channels.cache.get(
+          guildConfig.logChannelId
+        ) as TextChannel;
+
+        log.send({
+          embeds: [
+            new EmbedBuilder()
+              .setColor(0x2ecc71)
+              .setTitle('Application System initialized')
+              .setAuthor({
+                name: interaction.user.tag,
+                iconURL: interaction.user.avatarURL()!,
+              })
+              .setTimestamp()
+              .setFooter({ text: 'Command Used: /applications' }),
+          ],
+        });
       } catch (error) {
         console.log(error);
         await interaction.reply({
@@ -262,20 +326,66 @@ export const handleChatInputCommand = async (
 
     case 'addrole': {
       const newRole = interaction.options.getRole('newrole') as Role;
-      user = interaction.options.getMember('user') as GuildMember;
-      user.roles.add(newRole);
+      guildMember = interaction.options.getMember('guildMember') as GuildMember;
+      guildMember.roles.add(newRole);
       break;
     }
 
     case 'welcome':
       await interaction.reply({
-        content: `Welcome ${interaction.options.getMember('user')}. `,
+        content: `Welcome ${interaction.options.getMember('guildMember')}. `,
       });
       break;
-    case 'steps':
-      await interaction.reply({
-        content: `These are the step to become a Viking.`,
-      });
+
+    case 'register':
+      {
+        const channel = interaction.options.getChannel(
+          'channel'
+        ) as GuildTextBasedChannel;
+
+        try {
+          if (!guildConfig) {
+            guildConfig = guildConfigRepository.create({
+              guildId: guildId,
+              logChannelId: channel.id,
+            });
+          } else {
+            guildConfig.logChannelId = channel.id;
+          }
+          await guildConfigRepository.save(guildConfig);
+          await interaction.reply({
+            content:
+              'Guild Registered. Note: Make sure to initialize other services.',
+            ephemeral: true,
+          });
+          await channel.send({
+            embeds: [
+              new EmbedBuilder()
+                .setColor(0x2ecc71)
+                .setTitle('Guild Registered!')
+                .setDescription(
+                  'Some services need to be registered separately.'
+                )
+                .addFields(
+                  { name: 'Ticket System', value: '/tickets' },
+                  { name: 'Application System', value: '/applications' }
+                )
+                .setAuthor({
+                  name: interaction.user.tag,
+                  iconURL: interaction.user.avatarURL()!,
+                })
+                .setTimestamp()
+                .setFooter({ text: 'Command Used: /tickets' }),
+            ],
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue Registering the Guild.',
+            ephemeral: true,
+          });
+        }
+      }
       break;
     default:
       await interaction.reply({
