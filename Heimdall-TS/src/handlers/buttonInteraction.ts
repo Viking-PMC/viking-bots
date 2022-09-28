@@ -10,11 +10,14 @@ import {
   GuildMemberRoleManager,
   GuildTextBasedChannel,
 } from 'discord.js';
+import { applicationQuestions } from '../schema/application';
 import { AppDataSource } from '../typeorm';
 import { Application } from '../typeorm/entities/Application';
 import { ApplicationConfig } from '../typeorm/entities/ApplicationConfig';
+import { GuildConfig } from '../typeorm/entities/GuildConfig';
 import { Ticket } from '../typeorm/entities/Ticket';
 import { TicketConfig } from '../typeorm/entities/TicketConfig';
+import { getRanks, isDefined } from '../utils/Helpers';
 
 const ticketConfigRepository = AppDataSource.getRepository(TicketConfig);
 const ticketRepository = AppDataSource.getRepository(Ticket);
@@ -23,11 +26,40 @@ const applicationConfigRepository =
   AppDataSource.getRepository(ApplicationConfig);
 const applicationRepository = AppDataSource.getRepository(Application);
 
+const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
+
 export const handleButtonInteraction = async (
   client: Client,
   interaction: ButtonInteraction<CacheType>
 ) => {
   const { guild, guildId, channelId } = interaction;
+
+  if (!isDefined(guildId)) {
+    console.log('GuildId is Null.');
+    await interaction.reply({
+      content: 'This bot is likely not registered to this server.',
+      ephemeral: true,
+    });
+    return;
+  }
+  let applicationConfig = await applicationConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let guildConfig = await guildConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let ticketConfig = await ticketConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let application = await applicationRepository.findOneBy({
+    channelId,
+  });
+
+  const ticket = await ticketRepository.findOneBy({ channelId });
+
   switch (interaction.customId) {
     case 'create-ticket':
       {
@@ -36,9 +68,6 @@ export const handleButtonInteraction = async (
           return;
         }
         try {
-          const ticketConfig = await ticketConfigRepository.findOneBy({
-            guildId: guildId,
-          });
           if (!ticketConfig) {
             console.log('No ticket config exists');
             return;
@@ -125,7 +154,7 @@ export const handleButtonInteraction = async (
       const user = interaction.user;
       const channel = interaction.channel as GuildTextBasedChannel;
       const roles = interaction.member?.roles as GuildMemberRoleManager;
-      const ticket = await ticketRepository.findOneBy({ channelId });
+
       if (!ticket) return console.log("Ticket wasn't found");
 
       if (
@@ -205,7 +234,7 @@ export const handleButtonInteraction = async (
               ],
             });
             const newApplicationMessage = await newApplicationChannel.send({
-              content: '[APPLICATION INSTRUCTIONS]',
+              content: applicationQuestions,
             });
             applicationRepository.update(
               { id: savedApplication.id },
@@ -239,13 +268,7 @@ export const handleButtonInteraction = async (
         const application = await applicationRepository.findOneBy({
           channelId,
         });
-        if (!guildId) {
-          console.log('GuildId is Null.');
-          return;
-        }
-        const applicationConfig = await applicationConfigRepository.findOneBy({
-          guildId: guildId,
-        });
+
         if (!applicationConfig) {
           console.log('No application config exists');
           return;
@@ -258,10 +281,6 @@ export const handleButtonInteraction = async (
           );
           await channel.edit({
             permissionOverwrites: [
-              {
-                deny: ['ViewChannel', 'SendMessages'],
-                id: user.id,
-              },
               {
                 allow: ['ViewChannel', 'SendMessages'],
                 id: applicationConfig.role,
@@ -298,17 +317,16 @@ export const handleButtonInteraction = async (
       {
         const user = interaction.user;
         const channel = interaction.channel as GuildTextBasedChannel;
+        let ranks: { name: string; value: number }[] = await getRanks();
+
+        const guildRanks = interaction.guild?.roles.cache.filter((role) =>
+          ranks.some((r) => r.name === role.name)
+        );
 
         const application = await applicationRepository.findOneBy({
           channelId,
         });
-        if (!guildId) {
-          console.log('GuildId is Null.');
-          return;
-        }
-        const applicationConfig = await applicationConfigRepository.findOneBy({
-          guildId: guildId,
-        });
+
         if (!applicationConfig) {
           console.log('No application config exists');
           return;
@@ -335,7 +353,9 @@ export const handleButtonInteraction = async (
           });
           const userAsGuildMember = guild?.members.cache.get(user.id);
 
-          userAsGuildMember?.roles.add('856960955706769423');
+          userAsGuildMember?.roles.add(
+            guildRanks?.find((g) => g.name === ranks[1].name)!
+          );
           await channel.send({
             content: `${user.tag} Accepted.`,
             components: [
@@ -344,7 +364,7 @@ export const handleButtonInteraction = async (
                   .setCustomId('close-app')
                   .setStyle(ButtonStyle.Danger)
                   .setLabel('Close Room')
-                  .setEmoji('🎟')
+                  .setEmoji('🔴')
               ),
             ],
           });
@@ -360,41 +380,37 @@ export const handleButtonInteraction = async (
       }
       break;
 
-    case 'close-app': {
-      const channel = interaction.channel as GuildTextBasedChannel;
+    case 'close-app':
+      {
+        const channel = interaction.channel as GuildTextBasedChannel;
 
-      if (!guildId) {
-        console.log('GuildId is Null.');
-        return;
-      }
+        if (!applicationConfig) {
+          await interaction.reply({
+            content: 'No Application Config exists.',
+            ephemeral: true,
+          });
+          return;
+        }
 
-      const applicationConfig = await applicationConfigRepository.findOneBy({
-        guildId: guildId,
-      });
-      if (!applicationConfig) {
-        console.log('No application config exists');
-        await interaction.reply({
-          content: 'No Application Config exists.',
-          ephemeral: true,
+        const application = await applicationRepository.findOneBy({
+          channelId,
         });
-        return;
+        if (!application) {
+          await interaction.reply({
+            content: 'The application was not found.',
+            ephemeral: true,
+          });
+          return;
+        }
+
+        await channel.delete();
       }
-
-      const application = await applicationRepository.findOneBy({ channelId });
-      if (!application) {
-        console.log("Application wasn't found");
-        await interaction.reply({
-          content: 'The application was not found.',
-          ephemeral: true,
-        });
-        return;
-      }
-
-      await channel.delete();
-
       break;
-    }
     default:
+      await interaction.reply({
+        content: `This command has been registered but no interaction has been assigned. That usually means the command is not available for public use. If you think this is a mistake, please contact Tech.`,
+        ephemeral: true,
+      });
       break;
   }
 };

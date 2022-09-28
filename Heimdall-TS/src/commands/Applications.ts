@@ -32,21 +32,9 @@ export const applicationSetupCommand = new SlashCommandBuilder()
 export const denyApplicationCommand = new SlashCommandBuilder()
   .setName('deny')
   .setDescription('Denies this application and removes the user from the room.')
-  .addUserOption((option) =>
-    option
-      .setName('user')
-      .setDescription('Username of the user to deny.')
-      .setRequired(true)
-  )
   .toJSON();
 
 export const acceptApplicationCommand = new SlashCommandBuilder()
   .setName('accept')
   .setDescription('Accepts this application and sends the welcome message.')
-  .addUserOption((option) =>
-    option
-      .setName('user')
-      .setDescription('Username of the user to accept.')
-      .setRequired(true)
-  )
   .toJSON();
