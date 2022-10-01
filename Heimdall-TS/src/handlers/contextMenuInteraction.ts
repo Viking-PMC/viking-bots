@@ -58,9 +58,10 @@ const updateRoles = async (
     )!;
 
     user.roles.add(newRole);
-    user.roles.remove(
-      guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
-    );
+    if (oldRoleValue !== 3)
+      user.roles.remove(
+        guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
+      );
 
     await interaction.reply({
       allowedMentions: { roles: [newRole.id] },
