@@ -38,6 +38,12 @@ export const spookyWords = [
   'werewolves',
   'zombies',
   'skeledance',
+  'jack-o-lantern',
+  'jack o lantern',
+  'jackolantern',
+  'jackolanterns',
+  'jack-o-lanterns',
+  'jack o lanterns',
 ];
 export const spookyGifs = [
   'https://tenor.com/view/halloween-pumpkin-dancing-gif-4621441',
