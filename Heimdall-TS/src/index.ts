@@ -26,6 +26,7 @@ import { Application } from './typeorm/entities/Application';
 import { TicketMessage } from './typeorm/entities/TicketMessage';
 import { ApplicationMessage } from './typeorm/entities/ApplicationMessage';
 import { GuildConfig } from './typeorm/entities/GuildConfig';
+import { spookyGifs, spookyWords } from './schema/spooktober';
 
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
@@ -63,6 +64,29 @@ client.once('ready', () => console.log(`${client.user?.tag} logged in`));
 
 client.on('messageCreate', async (message) => {
   const { channelId } = message;
+
+  const checkHalloween = () => {
+    if (
+      new Date() > new Date(new Date().getFullYear().toString() + '-09-30') &&
+      new Date() < new Date(new Date().getFullYear().toString() + '-11-01')
+    ) {
+      if (message.author.bot) return;
+
+      if (
+        spookyWords.some((v) => message.content.toLocaleLowerCase().includes(v))
+      ) {
+        const spooky = client.channels.cache.get(channelId) as TextChannel;
+        message.react('🎃');
+        const randomSpookyGif =
+          spookyGifs[~~(Math.random() * spookyGifs.length)];
+        spooky.send({
+          content: randomSpookyGif,
+        });
+      }
+    }
+  };
+  checkHalloween();
+
   let messageRecord;
   const ticketDB = await ticketRepository.findOneBy({ channelId });
 
