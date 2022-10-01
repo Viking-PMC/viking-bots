@@ -38,6 +38,7 @@ export const spookyWords = [
   'werewolves',
   'zombies',
   'skeledance',
+  'creepy',
 ];
 export const spookyGifs = [
   'https://tenor.com/view/halloween-pumpkin-dancing-gif-4621441',
