@@ -38,6 +38,12 @@ export const spookyWords = [
   'werewolves',
   'zombies',
   'skeledance',
+  'jack-o-lantern',
+  'jack o lantern',
+  'jackolantern',
+  'jackolanterns',
+  'jack-o-lanterns',
+  'jack o lanterns',
   'creepy',
 ];
 export const spookyGifs = [
