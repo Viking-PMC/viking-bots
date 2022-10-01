@@ -46,16 +46,8 @@ export const handleButtonInteraction = async (
     guildId,
   });
 
-  let guildConfig = await guildConfigRepository.findOneBy({
-    guildId,
-  });
-
   let ticketConfig = await ticketConfigRepository.findOneBy({
     guildId,
-  });
-
-  let application = await applicationRepository.findOneBy({
-    channelId,
   });
 
   const ticket = await ticketRepository.findOneBy({ channelId });
