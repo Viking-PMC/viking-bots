@@ -145,6 +145,8 @@ client.on('guildMemberAdd', async (member) => {
     guildConfig.logChannelId
   ) as TextChannel;
 
+  member.guild.roles.cache.find(role => role.name === 'New User');
+
   log.send({
     embeds: [
       new EmbedBuilder()
