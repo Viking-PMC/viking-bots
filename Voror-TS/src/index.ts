@@ -1,5 +1,11 @@
 import 'reflect-metadata';
-import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
+import {
+  APIEmbed,
+  Client,
+  EmbedBuilder,
+  GatewayIntentBits,
+  TextChannel,
+} from 'discord.js';
 import 'dotenv/config';
 
 const { BOT_TOKEN, GUILD_ID } = process.env;
@@ -12,8 +18,9 @@ client.on('ready', () => console.log(`${client.user?.tag} logged in`));
 
 client.on('presenceUpdate', async (oldPresence, newPresence) => {
   let member = newPresence.member!;
-  let channel = client.channels.cache.get('316197700989222912') as TextChannel;
-  let text = '';
+  let channel = client.channels.cache.get('1022895469283790958') as TextChannel;
+  let text: string;
+  let embeds: APIEmbed[] = [];
   try {
     if (
       member?.user.bot &&
@@ -21,13 +28,47 @@ client.on('presenceUpdate', async (oldPresence, newPresence) => {
       oldPresence?.status !== newPresence.status
     ) {
       if (member?.presence?.status === 'online') {
-        text = `<@&671462457721487373> | <@${member.user.id}> is back online`;
+        text = '';
+        embeds = [
+          new EmbedBuilder()
+            .setAuthor({
+              name: 'Bot Online',
+            })
+            .setTimestamp()
+            .setColor(0x2ecc71)
+            .setTimestamp(new Date())
+            .setDescription(`<@${member.user.id}>`)
+            .addFields({
+              name: 'Name:',
+              value: member.displayName,
+              inline: true,
+            })
+            .setThumbnail(member.user.displayAvatarURL())
+            .toJSON(),
+        ];
       } else if (member?.presence?.status === 'offline') {
-        text = `<@&671462457721487373> | <@${member.user.id}> is offline`;
+        text = `<@&405408875295277072>`;
+        embeds = [
+          new EmbedBuilder()
+            .setAuthor({
+              name: 'Bot Offline',
+            })
+            .setTimestamp()
+            .setColor(0xf44336)
+            .setTimestamp(new Date())
+            .setDescription(`<@${member.user.id}>`)
+            .addFields({
+              name: 'Name:',
+              value: member.displayName,
+              inline: true,
+            })
+            .setThumbnail(member.user.displayAvatarURL())
+            .toJSON(),
+        ];
       } else {
         return;
       }
-      await channel.send(text);
+      await channel.send({ content: text, embeds: embeds });
     }
   } catch (error) {
     console.log(error);

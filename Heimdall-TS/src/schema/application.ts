@@ -143,13 +143,16 @@ export const FAQ = `
 **A:** 75% of operations.
 
 **Q:** I won't be able to attend an operation, what should I do?
-**A:** If you know in advance that you will not be able to attend an operation, don't sign up. If you are unable to attend an operation, please let us know as soon as possible.
+**A:** If you know in advance that you will not be able to attend an operation, don't sign up. If you are unable to attend an operation you signed up for, please let us know as soon as possible.
 
 **Q:** I won't be able to attend for a while, what should I do?
 **A:** We handle this on a case-by-case basis. Please contact a member of the personnel team.
 
 **Q:** I used to be a member of the community, can I re-join?
-**A:** Yes, if you left on good terms you may re-join. Please note that you will have to re-apply from the beginning.
+**A:** Yes, if you left on good terms you may re-join. You may have to re-apply from the beginning.
+
+**Q:** I left on bad terms, can I re-join?
+**A:** We Pride ourselves on being a community that gives second chances. If you left on bad terms, you may apply and we will vote on the matter. If you are accepted, you will have to re-apply from the beginning.
 
 **Q:** Do you have a modpack?
 **A:** Yes, you can find our modpack here: #information
