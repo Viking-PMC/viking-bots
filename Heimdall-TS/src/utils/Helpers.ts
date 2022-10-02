@@ -13,24 +13,61 @@ export const getRanks = async (): Promise<Rank[]> => {
   return ranks;
 };
 
-export const getRank = async (
-  member: GuildMember,
-  ranks: { name: string; value: number }[]
-) => {
+/**
+ * a function to get the rank of a user.
+ * @param member - The member to get the rank of
+ * @param ranks - The ranks to check against
+ * @returns - The value of the rank the member has
+ * @example
+ * const ranks = await getRanks();
+ * const rank = await getRank(member, ranks);
+ * console.log(rank);
+ * // 1
+ * @example
+ * const ranks = await getRanks();
+ * const rank = await getRank(member, ranks);
+ * console.log(rank);
+ * // undefined
+ * @example
+ * const ranks = await getRanks();
+ * const rank = await getRank(member, ranks);
+ * console.log(rank);
+ * // 0
+ * @example
+ * const ranks = await getRanks();
+ * const rank = await getRank(member, ranks);
+ * console.log(rank);
+ * // 2
+ */
+// Language: typescript
+export const getRank = async (member: GuildMember, ranks: Rank[]) => {
   const memberRanks = member.roles.cache.filter((role) =>
     ranks.some((r) => r.name === role.name)
   );
-
-  if (memberRanks.size === 0) return 0;
-
-  let currentHighest = 0;
-
+  if (memberRanks.size === 0) {
+    return 0;
+  }
+  let highestRank = 0;
   memberRanks.forEach((role) => {
-    const roleValue = ranks.find((r) => r.name === role.name)?.value!;
-
-    if (roleValue > currentHighest) {
-      currentHighest = roleValue;
+    const rank = ranks.find((r) => r.name === role.name);
+    if (rank === undefined) {
+      return undefined;
+    }
+    if (rank.value > highestRank) {
+      highestRank = rank.value;
     }
   });
-  return currentHighest;
+  return highestRank;
+};
+
+// Language: typescript
+//function to find the newest member in the guild
+export const getNewestMember = (members: GuildMember[]) => {
+  let newestMember = members[0];
+  members.forEach((member) => {
+    if (member.joinedAt! > newestMember.joinedAt!) {
+      newestMember = member;
+    }
+  });
+  return newestMember;
 };

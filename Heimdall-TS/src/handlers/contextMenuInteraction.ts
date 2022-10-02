@@ -6,6 +6,7 @@ import {
   GuildMemberRoleManager,
   PermissionsBitField,
 } from 'discord.js';
+import { Rank } from '../typeorm/entities/Rank';
 import { getRank, getRanks } from '../utils/Helpers';
 import { updateRolesType } from '../utils/Types';
 
@@ -28,7 +29,7 @@ const updateRoles = async (
   interaction: ContextMenuCommandInteraction<CacheType>,
   type: updateRolesType
 ) => {
-  let ranks: { name: string; value: number }[] = await getRanks();
+  let ranks: Rank[] = await getRanks();
   const user = interaction.options.getMember('user') as GuildMember;
   let oldRoleValue: number;
 
@@ -58,10 +59,9 @@ const updateRoles = async (
     )!;
 
     user.roles.add(newRole);
-    if (oldRoleValue !== 3)
-      user.roles.remove(
-        guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
-      );
+    user.roles.remove(
+      guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
+    );
 
     await interaction.reply({
       allowedMentions: { roles: [newRole.id] },
@@ -83,9 +83,10 @@ const updateRoles = async (
     )!;
 
     user.roles.add(newRole);
-    user.roles.remove(
-      guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
-    );
+    if (oldRoleValue !== 3)
+      user.roles.remove(
+        guildRanks?.find((g) => g.name === ranks[oldRoleValue].name)!
+      );
     await interaction.reply({
       allowedMentions: { roles: [newRole.id] },
       content: `${interaction.options.getMember(

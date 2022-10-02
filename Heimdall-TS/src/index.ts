@@ -20,15 +20,14 @@ import {
   acceptApplicationCommand,
   applicationSetupCommand,
   denyApplicationCommand,
-} from './commands/Applications';
+} from './commands/application';
 import { Ticket } from './typeorm/entities/Ticket';
 import { Application } from './typeorm/entities/Application';
 import { TicketMessage } from './typeorm/entities/TicketMessage';
 import { ApplicationMessage } from './typeorm/entities/ApplicationMessage';
 import { GuildConfig } from './typeorm/entities/GuildConfig';
 import { sendSpoopyGif } from './handlers/handleSpoopyGif';
-import { spooktoberSetupCommand } from './commands/Spooptober';
-
+import { spooktoberSetupCommand } from './commands/spooptober';
 
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
@@ -138,11 +137,9 @@ client.on('guildMemberAdd', async (member) => {
     guildConfig.logChannelId
   ) as TextChannel;
 
-
   member.roles.add(
     member.guild.roles.cache.find((role) => role.name === 'New User')!
   );
-
 
   log.send({
     embeds: [
