@@ -14,6 +14,11 @@ export const spooktoberSetupCommand = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand.setName('disable').setDescription('Disable Spooktober plugin')
   )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('status')
+      .setDescription('Check if Spooktober plugin is enabled')
+  )
   .addSubcommandGroup((group) =>
     group
       .setName('blacklist')

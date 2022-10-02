@@ -445,6 +445,283 @@ export const handleChatInputCommand = async (
       }
       break;
 
+    case 'spooktober / disable':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: false,
+            });
+          } else {
+            spooktoberConfig.enabled = false;
+          }
+          await spooktoberConfigRepository.save(spooktoberConfig);
+          await interaction.reply({
+            content: 'Spooktober plugin disabled.',
+            ephemeral: true,
+          });
+          const log = client.channels.cache.get(
+            guildConfig.logChannelId
+          ) as TextChannel;
+
+          log.send({
+            embeds: [
+              new EmbedBuilder()
+                .setColor(0x2ecc71)
+                .setTitle('Spooktober plugin disabled')
+                .setAuthor({
+                  name: interaction.user.tag,
+                  iconURL: interaction.user.avatarURL()!,
+                })
+                .setTimestamp()
+                .setFooter({ text: 'Command Used: /spooktober disable' }),
+            ],
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue disabling the Spooktober plugin',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
+    case 'spooktober / status':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: false,
+            });
+          }
+          await interaction.reply({
+            content: `Spooktober plugin is ${
+              spooktoberConfig.enabled ? 'enabled' : 'disabled'
+            }`,
+            ephemeral: true,
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue getting the Spooktober plugin status',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
+    case 'spooktober / blacklist / add':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: false,
+            });
+          }
+          const channel = interaction.options.getChannel(
+            'channel'
+          ) as TextChannel;
+          spooktoberConfig.blacklist.push(channel.id);
+          await spooktoberConfigRepository.save(spooktoberConfig);
+          await interaction.reply({
+            content: `Channel ${channel} added to the blacklist.`,
+            ephemeral: true,
+          });
+
+          const log = client.channels.cache.get(
+            guildConfig.logChannelId
+          ) as TextChannel;
+
+          log.send({
+            embeds: [
+              new EmbedBuilder()
+                .setColor(0x2ecc71)
+                .setTitle(`Spooktober: Channel ${channel} Blacklisted`)
+                .setAuthor({
+                  name: interaction.user.tag,
+                  iconURL: interaction.user.avatarURL()!,
+                })
+                .setTimestamp()
+                .setFooter({
+                  text: 'Command Used: /spooktober blacklist add {channel}',
+                }),
+            ],
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue adding the channel to the blacklist',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
+    case 'spooktober / blacklist / remove':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: false,
+            });
+          }
+          const channel = interaction.options.getChannel(
+            'channel'
+          ) as TextChannel;
+          spooktoberConfig.blacklist = spooktoberConfig.blacklist.filter(
+            (id) => id !== channel.id
+          );
+          await spooktoberConfigRepository.save(spooktoberConfig);
+          await interaction.reply({
+            content: `Channel ${channel} removed from the blacklist.`,
+            ephemeral: true,
+          });
+
+          const log = client.channels.cache.get(
+            guildConfig.logChannelId
+          ) as TextChannel;
+
+          log.send({
+            embeds: [
+              new EmbedBuilder()
+                .setColor(0x2ecc71)
+                .setTitle(
+                  `Spooktober: Channel ${channel} removed from blacklist`
+                )
+                .setAuthor({
+                  name: interaction.user.tag,
+                  iconURL: interaction.user.avatarURL()!,
+                })
+                .setTimestamp()
+                .setFooter({
+                  text: 'Command Used: /spooktober blacklist remove {channel}',
+                }),
+            ],
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content:
+              'There was an issue removing the channel from the blacklist',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
+    case 'spooktober / blacklist / list':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: false,
+            });
+          }
+          const channels = spooktoberConfig.blacklist.map((id) =>
+            client.channels.cache.get(id)
+          );
+          await interaction.reply({
+            content: `Blacklisted Channels: ${channels.join(', ')}`,
+            ephemeral: true,
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue getting the blacklist',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
+    case 'spooktober / blacklist / clear':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: false,
+            });
+          }
+          spooktoberConfig.blacklist = [];
+          await spooktoberConfigRepository.save(spooktoberConfig);
+          await interaction.reply({
+            content: `Blacklist cleared.`,
+            ephemeral: true,
+          });
+
+          const log = client.channels.cache.get(
+            guildConfig.logChannelId
+          ) as TextChannel;
+
+          log.send({
+            embeds: [
+              new EmbedBuilder()
+
+                .setColor(0x2ecc71)
+                .setTitle(`Spooktober: Blacklist Cleared`)
+                .setAuthor({
+                  name: interaction.user.tag,
+                  iconURL: interaction.user.avatarURL()!,
+                })
+                .setTimestamp()
+                .setFooter({
+                  text: 'Command Used: /spooktober blacklist clear',
+                }),
+            ],
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue clearing the blacklist',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
     default:
       await interaction.reply({
         content: `This command has been registered but no interaction has been assigned. That usually means the command is not available for public use. If you think this is a mistake, please contact Tech.`,
