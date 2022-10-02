@@ -29,6 +29,7 @@ import { GuildConfig } from './typeorm/entities/GuildConfig';
 import { sendSpoopyGif } from './handlers/handleSpoopyGif';
 import { spooktoberSetupCommand } from './commands/Spooptober';
 
+
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
 const ticketMessageRepository = AppDataSource.getRepository(TicketMessage);
@@ -74,17 +75,7 @@ client.on('messageCreate', async (message) => {
     ) {
       if (message.author.bot) return;
 
-      if (
-        spookyWords.some((v) => message.content.toLocaleLowerCase().includes(v))
-      ) {
-        const spooky = client.channels.cache.get(channelId) as TextChannel;
-        message.react('🎃');
-        const randomSpookyGif =
-          spookyGifs[~~(Math.random() * spookyGifs.length)];
-        spooky.send({
-          content: randomSpookyGif,
-        });
-      }
+      sendSpoopyGif(client, message, channelId);
     }
   };
   checkHalloween();
@@ -147,9 +138,11 @@ client.on('guildMemberAdd', async (member) => {
     guildConfig.logChannelId
   ) as TextChannel;
 
+
   member.roles.add(
     member.guild.roles.cache.find((role) => role.name === 'New User')!
   );
+
 
   log.send({
     embeds: [
