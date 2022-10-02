@@ -26,7 +26,8 @@ import { Application } from './typeorm/entities/Application';
 import { TicketMessage } from './typeorm/entities/TicketMessage';
 import { ApplicationMessage } from './typeorm/entities/ApplicationMessage';
 import { GuildConfig } from './typeorm/entities/GuildConfig';
-import { spookyGifs, spookyWords } from './schema/spooktober';
+import { sendSpoopyGif } from './handlers/handleSpoopyGif';
+import { spooktoberSetupCommand } from './commands/Spooptober';
 
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
@@ -58,6 +59,7 @@ const commands: RESTPostAPIApplicationCommandsJSONBody[] = [
   denyApplicationCommand,
   acceptApplicationCommand,
   registerGuildCommand,
+  spooktoberSetupCommand,
 ];
 
 client.once('ready', () => console.log(`${client.user?.tag} logged in`));
@@ -144,6 +146,10 @@ client.on('guildMemberAdd', async (member) => {
   const log = client.channels.cache.get(
     guildConfig.logChannelId
   ) as TextChannel;
+
+  member.roles.add(
+    member.guild.roles.cache.find((role) => role.name === 'New User')!
+  );
 
   log.send({
     embeds: [

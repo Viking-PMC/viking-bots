@@ -17,6 +17,7 @@ import { AppDataSource } from '../typeorm';
 import { Application } from '../typeorm/entities/Application';
 import { ApplicationConfig } from '../typeorm/entities/ApplicationConfig';
 import { GuildConfig } from '../typeorm/entities/GuildConfig';
+import { SpooktoberConfig } from '../typeorm/entities/SpooktoberConfig';
 import { TicketConfig } from '../typeorm/entities/TicketConfig';
 import { isDefined } from '../utils/Helpers';
 
@@ -27,6 +28,9 @@ const applicationConfigRepository =
 const applicationRepository = AppDataSource.getRepository(Application);
 
 const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
+
+const spooktoberConfigRepository =
+  AppDataSource.getRepository(SpooktoberConfig);
 
 export const handleChatInputCommand = async (
   client: Client,
@@ -53,6 +57,10 @@ export const handleChatInputCommand = async (
   });
 
   let ticketConfig = await ticketConfigRepository.findOneBy({
+    guildId,
+  });
+
+  let spooktoberConfig = await spooktoberConfigRepository.findOneBy({
     guildId,
   });
 
@@ -387,6 +395,56 @@ export const handleChatInputCommand = async (
         }
       }
       break;
+
+    case 'spooktober / enable':
+      {
+        try {
+          if (!guildConfig) {
+            await interaction.reply({
+              content: 'Please register the Guild First.',
+            });
+            return;
+          }
+          if (!spooktoberConfig) {
+            spooktoberConfig = spooktoberConfigRepository.create({
+              guildId: guildId,
+              enabled: true,
+            });
+          } else {
+            spooktoberConfig.enabled = true;
+          }
+          await spooktoberConfigRepository.save(spooktoberConfig);
+          await interaction.reply({
+            content: 'Spooktober plugin enabled.',
+            ephemeral: true,
+          });
+          const log = client.channels.cache.get(
+            guildConfig.logChannelId
+          ) as TextChannel;
+
+          log.send({
+            embeds: [
+              new EmbedBuilder()
+                .setColor(0x2ecc71)
+                .setTitle('Spooktober plugin enabled')
+                .setAuthor({
+                  name: interaction.user.tag,
+                  iconURL: interaction.user.avatarURL()!,
+                })
+                .setTimestamp()
+                .setFooter({ text: 'Command Used: /spooktober enable' }),
+            ],
+          });
+        } catch (error) {
+          console.log(error);
+          await interaction.reply({
+            content: 'There was an issue enabling the Spooktober plugin',
+            ephemeral: true,
+          });
+        }
+      }
+      break;
+
     default:
       await interaction.reply({
         content: `This command has been registered but no interaction has been assigned. That usually means the command is not available for public use. If you think this is a mistake, please contact Tech.`,
