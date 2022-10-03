@@ -22,8 +22,10 @@
     "@discordjs/rest": "^1.2.0",
     "axios": "^0.27.2",
     "discord.js": "^14.5.0",
+    "fs": "^0.0.1-security",
     "mongodb": "^3.7.3",
     "mysql2": "^2.3.3",
+    "path": "^0.12.7",
     "reflect-metadata": "^0.1.13",
     "typeorm": "^0.3.10"
   }

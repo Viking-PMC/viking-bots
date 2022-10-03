@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import {
   Client,
+  Collection,
   EmbedBuilder,
   GatewayIntentBits,
   REST,
@@ -9,13 +10,12 @@ import {
   TextChannel,
 } from 'discord.js';
 import 'dotenv/config';
-import { handleChatInputCommand } from './handlers/chatInputCommand';
-import { handleButtonInteraction } from './handlers/buttonInteraction';
+
 import { AppDataSource } from './typeorm';
 import { ticketSetupCommand } from './commands/tickets';
 import { registerGuildCommand, welcomeCommand } from './commands/general';
 import { demoteCommand, promoteCommand, rolesCommand } from './commands/roles';
-import { handleContextMenuInteraction } from './handlers/contextMenuInteraction';
+
 import {
   acceptApplicationCommand,
   applicationSetupCommand,
@@ -26,8 +26,9 @@ import { Application } from './typeorm/entities/Application';
 import { TicketMessage } from './typeorm/entities/TicketMessage';
 import { ApplicationMessage } from './typeorm/entities/ApplicationMessage';
 import { GuildConfig } from './typeorm/entities/GuildConfig';
-import { sendSpoopyGif } from './handlers/handleSpoopyGif';
 import { spooktoberSetupCommand } from './commands/spooptober';
+import registerCommands from './utils/registry';
+import { ClientInt } from './utils/ClientInt';
 
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
@@ -39,7 +40,7 @@ const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
 const { CLIENT_ID, GUILD_ID, BOT_TOKEN } = process.env;
 
-const client = new Client({
+const client = new ClientInt({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -73,8 +74,6 @@ client.on('messageCreate', async (message) => {
       new Date() < new Date(new Date().getFullYear().toString() + '-11-01')
     ) {
       if (message.author.bot) return;
-
-      sendSpoopyGif(client, message, channelId);
     }
   };
   checkHalloween();
@@ -116,12 +115,6 @@ client.on('interactionCreate', (interaction) => {
   else if (interaction.isContextMenuCommand())
     client.emit('contextMenuInteraction', client, interaction);
 });
-
-client.on('chatInputCommand', handleChatInputCommand);
-
-client.on('buttonInteraction', handleButtonInteraction);
-
-client.on('contextMenuInteraction', handleContextMenuInteraction);
 
 client.on('guildMemberAdd', async (member) => {
   const guildConfig = await guildConfigRepository.findOneBy({
@@ -224,6 +217,10 @@ const main = async () => {
     if (!CLIENT_ID || !GUILD_ID || !BOT_TOKEN)
       throw new Error('Incomplete .env config!');
 
+    client.slashCommands = new Collection();
+
+    await registerCommands(client, '../handlers');
+    console.log(client.slashCommands);
     await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
       body: commands,
     });
