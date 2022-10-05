@@ -9,6 +9,9 @@ export class ApplicationConfig {
   guildId: string;
 
   @Column()
+  enabled: boolean;
+
+  @Column()
   messageId: string;
 
   @Column()

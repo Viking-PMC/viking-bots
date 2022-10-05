@@ -9,6 +9,9 @@ export class TicketConfig {
   guildId: string;
 
   @Column()
+  enabled: boolean;
+
+  @Column()
   messageId: string;
 
   @Column()
