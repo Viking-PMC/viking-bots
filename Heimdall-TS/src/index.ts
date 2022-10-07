@@ -1,34 +1,20 @@
 import 'reflect-metadata';
 import {
-  Client,
   EmbedBuilder,
   GatewayIntentBits,
   REST,
-  RESTPostAPIApplicationCommandsJSONBody,
   Routes,
   TextChannel,
 } from 'discord.js';
 import 'dotenv/config';
-import { handleChatInputCommand } from './handlers/chatInputCommand';
-import { handleButtonInteraction } from './handlers/buttonInteraction';
 import { AppDataSource } from './typeorm';
-import { ticketSetupCommand } from './commands/tickets';
-import { registerGuildCommand, welcomeCommand } from './commands/general';
-import { demoteCommand, promoteCommand, rolesCommand } from './commands/roles';
-import { handleContextMenuInteraction } from './handlers/contextMenuInteraction';
-import {
-  acceptApplicationCommand,
-  applicationSetupCommand,
-  denyApplicationCommand,
-} from './commands/Applications';
 import { Ticket } from './typeorm/entities/Ticket';
 import { Application } from './typeorm/entities/Application';
 import { TicketMessage } from './typeorm/entities/TicketMessage';
 import { ApplicationMessage } from './typeorm/entities/ApplicationMessage';
 import { GuildConfig } from './typeorm/entities/GuildConfig';
-import { sendSpoopyGif } from './handlers/handleSpoopyGif';
-import { spooktoberSetupCommand } from './commands/Spooptober';
-
+import { registerCommands, registerSubCommands } from './utils/registry';
+import { ClientInt } from './utils/ClientInt';
 
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
@@ -40,7 +26,7 @@ const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
 const { CLIENT_ID, GUILD_ID, BOT_TOKEN } = process.env;
 
-const client = new Client({
+const client = new ClientInt({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -49,19 +35,6 @@ const client = new Client({
   ],
 });
 const rest = new REST({ version: '10' }).setToken(BOT_TOKEN!); // **** Means this won't complain about possible undefined.
-
-const commands: RESTPostAPIApplicationCommandsJSONBody[] = [
-  ticketSetupCommand,
-  welcomeCommand,
-  rolesCommand,
-  promoteCommand,
-  demoteCommand,
-  applicationSetupCommand,
-  denyApplicationCommand,
-  acceptApplicationCommand,
-  registerGuildCommand,
-  spooktoberSetupCommand,
-];
 
 client.once('ready', () => console.log(`${client.user?.tag} logged in`));
 
@@ -74,8 +47,6 @@ client.on('messageCreate', async (message) => {
       new Date() < new Date(new Date().getFullYear().toString() + '-11-01')
     ) {
       if (message.author.bot) return;
-
-      sendSpoopyGif(client, message, channelId);
     }
   };
   checkHalloween();
@@ -109,20 +80,43 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-client.on('interactionCreate', (interaction) => {
-  if (interaction.isChatInputCommand())
-    client.emit('chatInputCommand', client, interaction);
-  else if (interaction.isButton())
-    client.emit('buttonInteraction', client, interaction);
-  else if (interaction.isContextMenuCommand())
-    client.emit('contextMenuInteraction', client, interaction);
+client.on('interactionCreate', async (interaction) => {
+  if (interaction.isChatInputCommand()) {
+    const { commandName } = interaction;
+    const cmd = await client.commands.get(commandName);
+
+    const subcommandGroup = interaction.options.getSubcommandGroup(false);
+    const subcommandName = interaction.options.getSubcommand(false);
+
+    if (subcommandName) {
+      if (subcommandGroup) {
+        const subcommandInstance = client.slashSubcommands.get(commandName);
+        await subcommandInstance.groupCommands
+          .get(subcommandGroup)
+          .get(subcommandName)
+          .run(client, interaction);
+      } else {
+        const subcommandInstance = client.slashSubcommands.get(commandName);
+        await subcommandInstance.groupCommands
+          .get(subcommandName)
+          .run(client, interaction);
+      }
+      return;
+    }
+
+    if (cmd) {
+      cmd.run(client, interaction);
+    } else {
+      interaction.reply({
+        content: 'This command is not registered yet!',
+        ephemeral: true,
+      });
+    }
+  }
+  if (interaction.isButton()) {
+    client.commands.get(interaction.customId).run(client, interaction);
+  }
 });
-
-client.on('chatInputCommand', handleChatInputCommand);
-
-client.on('buttonInteraction', handleButtonInteraction);
-
-client.on('contextMenuInteraction', handleContextMenuInteraction);
 
 client.on('guildMemberAdd', async (member) => {
   const guildConfig = await guildConfigRepository.findOneBy({
@@ -138,11 +132,9 @@ client.on('guildMemberAdd', async (member) => {
     guildConfig.logChannelId
   ) as TextChannel;
 
-
   member.roles.add(
     member.guild.roles.cache.find((role) => role.name === 'New User')!
   );
-
 
   log.send({
     embeds: [
@@ -227,8 +219,18 @@ const main = async () => {
     if (!CLIENT_ID || !GUILD_ID || !BOT_TOKEN)
       throw new Error('Incomplete .env config!');
 
+    await registerCommands(client, '../handlers');
+    await registerSubCommands(client);
+
+    const commandsJSON = client.commands
+      .filter((cmd) => typeof cmd.getCommandJSON === 'function')
+      .map((cmd) => cmd.getCommandJSON());
+
+    const subCommandsJSON = client.slashSubcommands.map((cmd) =>
+      cmd.getCommandJSON()
+    );
     await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
-      body: commands,
+      body: [...commandsJSON, ...subCommandsJSON],
     });
 
     AppDataSource.initialize();

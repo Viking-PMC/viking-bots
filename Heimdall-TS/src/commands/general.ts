@@ -1,13 +1,10 @@
-import {
-  ContextMenuCommandBuilder,
-  SlashCommandBuilder,
-} from '@discordjs/builders';
+import { SlashCommandBuilder } from '@discordjs/builders';
 import { ChannelType, PermissionsBitField } from 'discord.js';
 
-export const welcomeCommand = new ContextMenuCommandBuilder()
+export const welcomeCommand = new SlashCommandBuilder()
   .setName('welcome')
+  .setDescription('Welcome')
   .setDefaultMemberPermissions(PermissionsBitField.Flags.UseApplicationCommands)
-  .setType(2)
   .toJSON();
 
 export const registerGuildCommand = new SlashCommandBuilder()
