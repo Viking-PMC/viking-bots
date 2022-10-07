@@ -52,8 +52,8 @@ class SpooktoberSubCommand extends BaseSlashSubCommand {
                   .setRequired(true)
                   .addChannelTypes(
                     ChannelType.GuildText,
-                    ChannelType.GuildPrivateThread,
-                    ChannelType.GuildPublicThread
+                    ChannelType.PrivateThread,
+                    ChannelType.PublicThread
                   )
               )
           )
@@ -68,8 +68,8 @@ class SpooktoberSubCommand extends BaseSlashSubCommand {
                   .setRequired(true)
                   .addChannelTypes(
                     ChannelType.GuildText,
-                    ChannelType.GuildPrivateThread,
-                    ChannelType.GuildPublicThread
+                    ChannelType.PrivateThread,
+                    ChannelType.PublicThread
                   )
               )
           )
