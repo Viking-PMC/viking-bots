@@ -44,7 +44,11 @@ export const spooktoberSetupCommand = new SlashCommandBuilder()
               .setName('channel')
               .setDescription('Channel to remove from the blacklist')
               .setRequired(true)
-              .addChannelTypes(ChannelType.GuildText)
+              .addChannelTypes(
+                ChannelType.GuildText,
+                ChannelType.PublicThread,
+                ChannelType.PrivateThread
+              )
           )
       )
       .addSubcommand((subcommand) =>
