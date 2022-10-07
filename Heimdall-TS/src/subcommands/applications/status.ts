@@ -1,34 +1,25 @@
 import { CacheType, ChatInputCommandInteraction } from 'discord.js';
 import { AppDataSource } from '../../typeorm';
-import { SpooktoberConfig } from '../../typeorm/entities/SpooktoberConfig';
-import BaseSubCommandExecutor from '../../utils/BaseSubcommandExecutor';
-import { ClientInt } from '../../utils/ClientInt';
-import { Group } from '../../utils/BaseSlashSubCommand';
+import { ApplicationConfig } from '../../typeorm/entities/ApplicationConfig';
 import { GuildConfig } from '../../typeorm/entities/GuildConfig';
 
-const spooktoberConfigRepository =
-  AppDataSource.getRepository(SpooktoberConfig);
+import { Group } from '../../utils/BaseSlashSubCommand';
+import BaseSubCommandExecutor from '../../utils/BaseSubcommandExecutor';
+import { ClientInt } from '../../utils/ClientInt';
+
+const applicationConfigRepository =
+  AppDataSource.getRepository(ApplicationConfig);
 const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
-/**
- * Gets the spooktober Spooktober Plugin status.
- * @param client The client.
- * @param interaction The interaction.
- * @returns void
- *
- * @example
- * // Get the spooktober plugin status
- * /spooktober status
- *
- */
-class SpooktoberStatusSubCommand extends BaseSubCommandExecutor {
+
+class ApplicationStatusSubCommand extends BaseSubCommandExecutor {
   constructor(baseCommand: string, group: Group) {
     super(baseCommand, group, 'status');
   }
 
   async run(
-    client: ClientInt,
+    _client: ClientInt,
     interaction: ChatInputCommandInteraction<CacheType>
-  ) {
+  ): Promise<void> {
     const { guildId } = interaction;
 
     let guildConfig = await guildConfigRepository.findOneBy({
@@ -42,28 +33,28 @@ class SpooktoberStatusSubCommand extends BaseSubCommandExecutor {
       return;
     }
 
-    const spooktoberConfig = await spooktoberConfigRepository.findOneBy({
+    const applicationConfig = await applicationConfigRepository.findOneBy({
       guildId: guildId!,
     });
-    if (!spooktoberConfig) {
+    if (!applicationConfig) {
       await interaction.reply({
-        content: 'Spooktober plugin is not registered.',
+        content: 'Application plugin is not registered.',
         ephemeral: true,
       });
       return;
     }
-    if (spooktoberConfig.enabled) {
+    if (applicationConfig.enabled) {
       await interaction.reply({
-        content: 'Spooktober plugin is enabled',
+        content: 'Application plugin is enabled',
         ephemeral: true,
       });
       return;
     }
     await interaction.reply({
-      content: 'Spooktober plugin is not enabled',
+      content: 'Application plugin is not enabled',
       ephemeral: true,
     });
   }
 }
 
-export default SpooktoberStatusSubCommand;
+export default ApplicationStatusSubCommand;

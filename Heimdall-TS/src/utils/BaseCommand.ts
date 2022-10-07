@@ -1,4 +1,4 @@
-export class BaseSlashCommand {
+export class BaseCommand {
   _name: string;
 
   constructor(name: string) {

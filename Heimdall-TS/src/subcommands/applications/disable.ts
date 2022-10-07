@@ -4,17 +4,18 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import { AppDataSource } from '../../typeorm';
+import { ApplicationConfig } from '../../typeorm/entities/ApplicationConfig';
 import { GuildConfig } from '../../typeorm/entities/GuildConfig';
-import { SpooktoberConfig } from '../../typeorm/entities/SpooktoberConfig';
+
 import { Group } from '../../utils/BaseSlashSubCommand';
 import BaseSubCommandExecutor from '../../utils/BaseSubcommandExecutor';
 import { ClientInt } from '../../utils/ClientInt';
 
-const spooktoberConfigRepository =
-  AppDataSource.getRepository(SpooktoberConfig);
+const applicationConfigRepository =
+  AppDataSource.getRepository(ApplicationConfig);
 const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
-class SpooktoberDisableSubCommand extends BaseSubCommandExecutor {
+class ApplicationDisableSubCommand extends BaseSubCommandExecutor {
   constructor(baseCommand: string, group: Group) {
     super(baseCommand, group, 'disable');
   }
@@ -36,29 +37,29 @@ class SpooktoberDisableSubCommand extends BaseSubCommandExecutor {
       return;
     }
 
-    const spooktoberConfig = await spooktoberConfigRepository.findOneBy({
+    const applicationConfig = await applicationConfigRepository.findOneBy({
       guildId: guildId!,
     });
-    if (!spooktoberConfig) {
+    if (!applicationConfig) {
       await interaction.reply({
-        content: 'Spooktober plugin is not registered.',
+        content: 'Application plugin is not registered.',
         ephemeral: true,
       });
       return;
     }
-    if (!spooktoberConfig.enabled) {
+    if (!applicationConfig.enabled) {
       await interaction.reply({
-        content: 'Spooktober plugin is not enabled',
+        content: 'Application plugin is not enabled',
         ephemeral: true,
       });
       return;
     }
-    spooktoberConfig.enabled = false;
-    await spooktoberConfigRepository.save(spooktoberConfig);
+    applicationConfig.enabled = false;
+    await applicationConfigRepository.save(applicationConfig);
 
     const embed = new EmbedBuilder();
-    embed.setTitle('Spooktober Plugin Disabled');
-    embed.setDescription('Spooktober plugin has been disabled.');
+    embed.setTitle('Application Plugin Disabled');
+    embed.setDescription('Application plugin has been disabled.');
     embed.setColor(0xf44336);
 
     await interaction.reply({
@@ -67,4 +68,4 @@ class SpooktoberDisableSubCommand extends BaseSubCommandExecutor {
   }
 }
 
-export default SpooktoberDisableSubCommand;
+export default ApplicationDisableSubCommand;

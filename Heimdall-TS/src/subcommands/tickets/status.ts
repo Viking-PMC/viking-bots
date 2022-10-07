@@ -1,34 +1,24 @@
 import { CacheType, ChatInputCommandInteraction } from 'discord.js';
 import { AppDataSource } from '../../typeorm';
-import { SpooktoberConfig } from '../../typeorm/entities/SpooktoberConfig';
+import { GuildConfig } from '../../typeorm/entities/GuildConfig';
+import { TicketConfig } from '../../typeorm/entities/TicketConfig';
+
+import { Group } from '../../utils/BaseSlashSubCommand';
 import BaseSubCommandExecutor from '../../utils/BaseSubcommandExecutor';
 import { ClientInt } from '../../utils/ClientInt';
-import { Group } from '../../utils/BaseSlashSubCommand';
-import { GuildConfig } from '../../typeorm/entities/GuildConfig';
 
-const spooktoberConfigRepository =
-  AppDataSource.getRepository(SpooktoberConfig);
+const ticketConfigRepository = AppDataSource.getRepository(TicketConfig);
 const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
-/**
- * Gets the spooktober Spooktober Plugin status.
- * @param client The client.
- * @param interaction The interaction.
- * @returns void
- *
- * @example
- * // Get the spooktober plugin status
- * /spooktober status
- *
- */
-class SpooktoberStatusSubCommand extends BaseSubCommandExecutor {
+
+class TicketStatusSubCommand extends BaseSubCommandExecutor {
   constructor(baseCommand: string, group: Group) {
     super(baseCommand, group, 'status');
   }
 
   async run(
-    client: ClientInt,
+    _client: ClientInt,
     interaction: ChatInputCommandInteraction<CacheType>
-  ) {
+  ): Promise<void> {
     const { guildId } = interaction;
 
     let guildConfig = await guildConfigRepository.findOneBy({
@@ -42,28 +32,28 @@ class SpooktoberStatusSubCommand extends BaseSubCommandExecutor {
       return;
     }
 
-    const spooktoberConfig = await spooktoberConfigRepository.findOneBy({
+    const ticketConfig = await ticketConfigRepository.findOneBy({
       guildId: guildId!,
     });
-    if (!spooktoberConfig) {
+    if (!ticketConfig) {
       await interaction.reply({
-        content: 'Spooktober plugin is not registered.',
+        content: 'Ticket plugin is not registered.',
         ephemeral: true,
       });
       return;
     }
-    if (spooktoberConfig.enabled) {
+    if (ticketConfig.enabled) {
       await interaction.reply({
-        content: 'Spooktober plugin is enabled',
+        content: 'Ticket plugin is enabled',
         ephemeral: true,
       });
       return;
     }
     await interaction.reply({
-      content: 'Spooktober plugin is not enabled',
+      content: 'Ticket plugin is not enabled',
       ephemeral: true,
     });
   }
 }
 
-export default SpooktoberStatusSubCommand;
+export default TicketStatusSubCommand;

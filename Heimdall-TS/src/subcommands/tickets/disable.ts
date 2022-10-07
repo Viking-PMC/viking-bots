@@ -5,24 +5,23 @@ import {
 } from 'discord.js';
 import { AppDataSource } from '../../typeorm';
 import { GuildConfig } from '../../typeorm/entities/GuildConfig';
-import { SpooktoberConfig } from '../../typeorm/entities/SpooktoberConfig';
+import { TicketConfig } from '../../typeorm/entities/TicketConfig';
 import { Group } from '../../utils/BaseSlashSubCommand';
 import BaseSubCommandExecutor from '../../utils/BaseSubcommandExecutor';
 import { ClientInt } from '../../utils/ClientInt';
 
-const spooktoberConfigRepository =
-  AppDataSource.getRepository(SpooktoberConfig);
+const ticketConfigRepository = AppDataSource.getRepository(TicketConfig);
 const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
-class SpooktoberDisableSubCommand extends BaseSubCommandExecutor {
+class TicketDisableSubCommand extends BaseSubCommandExecutor {
   constructor(baseCommand: string, group: Group) {
     super(baseCommand, group, 'disable');
   }
 
   async run(
-    client: ClientInt,
+    _client: ClientInt,
     interaction: ChatInputCommandInteraction<CacheType>
-  ) {
+  ): Promise<void> {
     const { guildId } = interaction;
 
     let guildConfig = await guildConfigRepository.findOneBy({
@@ -36,29 +35,29 @@ class SpooktoberDisableSubCommand extends BaseSubCommandExecutor {
       return;
     }
 
-    const spooktoberConfig = await spooktoberConfigRepository.findOneBy({
+    const ticketConfig = await ticketConfigRepository.findOneBy({
       guildId: guildId!,
     });
-    if (!spooktoberConfig) {
+    if (!ticketConfig) {
       await interaction.reply({
-        content: 'Spooktober plugin is not registered.',
+        content: 'Ticket plugin is not registered.',
         ephemeral: true,
       });
       return;
     }
-    if (!spooktoberConfig.enabled) {
+    if (!ticketConfig.enabled) {
       await interaction.reply({
-        content: 'Spooktober plugin is not enabled',
+        content: 'Ticket plugin is not enabled',
         ephemeral: true,
       });
       return;
     }
-    spooktoberConfig.enabled = false;
-    await spooktoberConfigRepository.save(spooktoberConfig);
 
+    ticketConfig.enabled = false;
+    await ticketConfigRepository.save(ticketConfig);
     const embed = new EmbedBuilder();
-    embed.setTitle('Spooktober Plugin Disabled');
-    embed.setDescription('Spooktober plugin has been disabled.');
+    embed.setTitle('Ticket Plugin Disabled');
+    embed.setDescription('Ticket plugin has been disabled.');
     embed.setColor(0xf44336);
 
     await interaction.reply({
@@ -67,4 +66,4 @@ class SpooktoberDisableSubCommand extends BaseSubCommandExecutor {
   }
 }
 
-export default SpooktoberDisableSubCommand;
+export default TicketDisableSubCommand;

@@ -56,7 +56,8 @@ export const spookyWords = [
   'trick_or_treats',
   'trickortreat',
   'trickortreats',
-  'creepy',
+  'dracula',
+  'scawy',
 ];
 export const spookyGifs = [
   'https://tenor.com/view/halloween-pumpkin-dancing-gif-4621441',
