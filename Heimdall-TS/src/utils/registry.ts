@@ -43,11 +43,16 @@ export const registerSubCommands = async (
           path.join(filePath, file, 'index.ts'),
           constants.F_OK
         );
-        const BaseSubcommand = await require(path.join(
+        let BaseSubcommand = await require(path.join(
           filePath,
           file,
           'index.ts'
         )).default;
+
+        if (!BaseSubcommand) {
+          BaseSubcommand = await require(path.join(filePath, file, 'index.js'))
+            .default;
+        }
 
         const subcommand = new BaseSubcommand();
         client.slashSubcommands.set(file, subcommand);
