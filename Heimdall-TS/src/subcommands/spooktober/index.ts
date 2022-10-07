@@ -50,7 +50,11 @@ class SpooktoberSubCommand extends BaseSlashSubCommand {
                   .setName('channel')
                   .setDescription('Channel to add to the blacklist')
                   .setRequired(true)
-                  .addChannelTypes(ChannelType.GuildText)
+                  .addChannelTypes(
+                    ChannelType.GuildText,
+                    ChannelType.GuildPrivateThread,
+                    ChannelType.GuildPublicThread
+                  )
               )
           )
           .addSubcommand((subcommand) =>
@@ -62,7 +66,11 @@ class SpooktoberSubCommand extends BaseSlashSubCommand {
                   .setName('channel')
                   .setDescription('Channel to remove from the blacklist')
                   .setRequired(true)
-                  .addChannelTypes(ChannelType.GuildText)
+                  .addChannelTypes(
+                    ChannelType.GuildText,
+                    ChannelType.GuildPrivateThread,
+                    ChannelType.GuildPublicThread
+                  )
               )
           )
           .addSubcommand((subcommand) =>
