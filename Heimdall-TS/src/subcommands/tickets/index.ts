@@ -58,6 +58,10 @@ class TicketSubCommand extends BaseSlashSubCommand {
               .setRequired(true)
           )
       )
+      .addSubcommand((subcommand) =>
+        subcommand.setName('close').setDescription('Close the ticket')
+      )
+
       .toJSON();
   }
 }

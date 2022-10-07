@@ -93,16 +93,8 @@ class CreateTicketButtonCommand extends BaseCommand {
         ],
       });
       const newTicketMessage = await newTicketChannel.send({
-        content: 'Ticket Menu',
-        components: [
-          new ActionRowBuilder<ButtonBuilder>().setComponents(
-            new ButtonBuilder()
-              .setCustomId('close-ticket')
-              .setStyle(ButtonStyle.Danger)
-              .setLabel('close Ticket')
-              .setEmoji('🎟')
-          ),
-        ],
+        content:
+          'Please explain your issue. A member of tech support will be with you shortly.',
       });
       ticketRepository.update(
         { id: savedTicket.id },

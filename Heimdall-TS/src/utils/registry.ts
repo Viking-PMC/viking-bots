@@ -39,13 +39,11 @@ export const registerSubCommands = async (
       subcommandDirectoryFiles.splice(indexFilePos, 1);
 
       try {
-        let BaseSubcommand = await require(path.join(
-          filePath,
-          file,
-          'index.js'
-        )).default;
-
-        if (!BaseSubcommand) {
+        let BaseSubcommand;
+        try {
+          BaseSubcommand = await require(path.join(filePath, file, 'index.ts'))
+            .default;
+        } catch (error) {
           BaseSubcommand = await require(path.join(filePath, file, 'index.js'))
             .default;
         }
