@@ -57,7 +57,8 @@ export const spookyWords = [
   'trickortreat',
   'trickortreats',
   'dracula',
-  'scawy',
+  'scawy', // I'm not sure if this is a word, but it's a typo of scary.
+  'creepy',
 ];
 export const spookyGifs = [
   'https://tenor.com/view/halloween-pumpkin-dancing-gif-4621441',

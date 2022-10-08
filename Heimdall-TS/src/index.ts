@@ -15,6 +15,7 @@ import { ApplicationMessage } from './typeorm/entities/ApplicationMessage';
 import { GuildConfig } from './typeorm/entities/GuildConfig';
 import { registerCommands, registerSubCommands } from './utils/registry';
 import { ClientInt } from './utils/ClientInt';
+import HandleSpoopyGIF from './handlers/spooktober/handleSpoopyGIF';
 
 const ticketRepository = AppDataSource.getRepository(Ticket);
 const applicationRepository = AppDataSource.getRepository(Application);
@@ -44,10 +45,10 @@ client.on('messageCreate', async (message) => {
   const checkHalloween = () => {
     if (
       new Date() > new Date(new Date().getFullYear().toString() + '-09-30') &&
-      new Date() < new Date(new Date().getFullYear().toString() + '-11-01')
-    ) {
-      if (message.author.bot) return;
-    }
+      new Date() < new Date(new Date().getFullYear().toString() + '-11-01') &&
+      !message.author.bot
+    )
+      new HandleSpoopyGIF().run(client, message, channelId);
   };
   checkHalloween();
 

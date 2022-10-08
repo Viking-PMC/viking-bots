@@ -49,6 +49,12 @@ class ApplicationSubCommand extends BaseSlashSubCommand {
           .setName('status')
           .setDescription('Check if Applications plugin is enabled')
       )
+      .addSubcommand((subcommand) =>
+        subcommand.setName('accept').setDescription('Accept an application')
+      )
+      .addSubcommand((subcommand) =>
+        subcommand.setName('deny').setDescription('Deny an application')
+      )
       .toJSON();
   }
 }

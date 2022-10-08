@@ -3,15 +3,11 @@ import { applicationQuestions } from '../../schema/application';
 import { AppDataSource } from '../../typeorm';
 import { Application } from '../../typeorm/entities/Application';
 import { ApplicationConfig } from '../../typeorm/entities/ApplicationConfig';
-import { GuildConfig } from '../../typeorm/entities/GuildConfig';
-import { BaseCommand } from '../../utils/BaseCommand';
+import ApplicationsBaseCommand from '../../utils/ApplicationsBaseCommand';
 
-const applicationConfigRepository =
-  AppDataSource.getRepository(ApplicationConfig);
 const applicationRepository = AppDataSource.getRepository(Application);
-const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
-class OpenApplicationButtonCommand extends BaseCommand {
+class OpenApplicationButtonCommand extends ApplicationsBaseCommand {
   constructor() {
     super('open-application');
   }
@@ -20,40 +16,17 @@ class OpenApplicationButtonCommand extends BaseCommand {
   }
 
   async run(client: Client, interaction: ButtonInteraction<CacheType>) {
-    const { guildId, guild } = interaction;
-    if (!guildId || !guild) {
-      return interaction.reply({
-        content: 'Please use this command in a guild.',
-        ephemeral: true,
-      });
-    }
-    const guildConfig = guildConfigRepository.findOneBy({ guildId });
-    if (!guildConfig) {
-      return interaction.reply({
-        content: 'Please register the guild first.',
-        ephemeral: true,
-      });
-    }
-    const applicationConfig = await applicationConfigRepository.findOneBy({
-      guildId,
-    });
-    if (!applicationConfig) {
-      return interaction.reply({
-        content: 'Application plugin is not registered.',
-        ephemeral: true,
-      });
-    }
-    if (!applicationConfig.enabled) {
-      return interaction.reply({
-        content: 'Application plugin is not enabled.',
-        ephemeral: true,
-      });
-    }
+    const { guildId, guild, user } = interaction;
 
-    const application = await applicationRepository.findOneBy({
-      createdBy: interaction.user.id,
-      status: 'opened',
-    });
+    const { application, applicationConfig } = (await this.runApplicationsCheck(
+      client,
+      interaction,
+      {
+        createdBy: user.id,
+        status: 'opened',
+      }
+    )) as { applicationConfig: ApplicationConfig; application: Application };
+
     if (application) {
       return interaction.reply({
         content: 'You already have an open application.',
@@ -61,13 +34,13 @@ class OpenApplicationButtonCommand extends BaseCommand {
       });
     }
 
-    const newApplicationChannel = await guild.channels.create({
+    const newApplicationChannel = await guild!.channels.create({
       name: `application-${interaction.user.username}`,
       type: ChannelType.GuildText,
       parent: applicationConfig.categoryId,
       permissionOverwrites: [
         {
-          id: guildId,
+          id: guildId!,
           deny: ['ViewChannel'],
         },
         {
