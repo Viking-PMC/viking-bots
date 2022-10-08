@@ -10,15 +10,11 @@ import {
 import { AppDataSource } from '../../typeorm';
 import { Application } from '../../typeorm/entities/Application';
 import { ApplicationConfig } from '../../typeorm/entities/ApplicationConfig';
-import { GuildConfig } from '../../typeorm/entities/GuildConfig';
-import { BaseCommand } from '../../utils/BaseCommand';
+import ApplicationsBaseCommand from '../../utils/ApplicationsBaseCommand';
 
-const applicationConfigRepository =
-  AppDataSource.getRepository(ApplicationConfig);
 const applicationRepository = AppDataSource.getRepository(Application);
-const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
-class DeclineWelcomeButtonCommand extends BaseCommand {
+class DeclineWelcomeButtonCommand extends ApplicationsBaseCommand {
   constructor() {
     super('decline-welcome');
   }
@@ -29,46 +25,14 @@ class DeclineWelcomeButtonCommand extends BaseCommand {
   async run(client: Client, interaction: ButtonInteraction<CacheType>) {
     const { guildId, guild, user } = interaction;
 
-    if (!guildId || !guild) {
-      return interaction.reply({
-        content: 'Please use this command in a guild.',
-        ephemeral: true,
-      });
-    }
-
-    const guildConfig = await guildConfigRepository.findOneBy({ guildId });
-    if (!guildConfig) {
-      return interaction.reply({
-        content: 'Please register the guild first.',
-        ephemeral: true,
-      });
-    }
-
-    const applicationConfig = await applicationConfigRepository.findOneBy({
-      guildId,
-    });
-    if (!applicationConfig) {
-      return interaction.reply({
-        content: 'Application plugin is not registered.',
-        ephemeral: true,
-      });
-    }
-    if (!applicationConfig.enabled) {
-      return interaction.reply({
-        content: 'Application plugin is not enabled.',
-        ephemeral: true,
-      });
-    }
-
-    const application = await applicationRepository.findOneBy({
-      createdBy: user.id,
-      status: 'opened',
-    });
-
-    if (!application) {
-      console.log('Application not found');
-      return;
-    }
+    const { applicationConfig, application } = (await this.runApplicationsCheck(
+      client,
+      interaction,
+      {
+        createdBy: user.id,
+        status: 'opened',
+      }
+    )) as { applicationConfig: ApplicationConfig; application: Application };
 
     if (user.id === application.createdBy) {
       await applicationRepository.update(
@@ -87,7 +51,7 @@ class DeclineWelcomeButtonCommand extends BaseCommand {
             id: applicationConfig.role,
           },
           { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
-          { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+          { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
         ],
       });
       await channel.send({
@@ -108,7 +72,7 @@ class DeclineWelcomeButtonCommand extends BaseCommand {
       await interaction.deleteReply();
 
       //kick the user
-      const member = await guild.members.fetch(user.id);
+      const member = await guild!.members.fetch(user.id);
       await member.kick('Declined to join');
 
       member.send({

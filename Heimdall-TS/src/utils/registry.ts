@@ -1,10 +1,35 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { constants } from 'fs';
 import { ClientInt } from './ClientInt';
 import { Collection } from 'discord.js';
 
-export const registerCommands = async (client: ClientInt, dir = '') => {
+/**
+ * A function to register all the commands.
+ * @category Utils
+ * @public
+ * @async
+ * @name registerSubCommands
+ * @function
+ * @since 1.0.0
+ * @version 1.0.0
+ * @type {Function}
+ * @param {ClientInt} client The client object.
+ * @param {string} dir The directory where the commands are stored.
+ * @returns {Promise<void>} A promise that resolves to void.
+ * @example
+ * ```ts
+ * import { registerCommands } from './utils/registry';
+ * import { ClientInt } from './utils/ClientInt';
+ *
+ * const client = new ClientInt();
+ *
+ * registerCommands(client, './commands');
+ * ```
+ */
+export const registerCommands: Function = async (
+  client: ClientInt,
+  dir: string = ''
+): Promise<void> => {
   const filePath = path.join(__dirname, dir);
   const files = await fs.promises.readdir(filePath);
 
@@ -21,9 +46,33 @@ export const registerCommands = async (client: ClientInt, dir = '') => {
   }
 };
 
-export const registerSubCommands = async (
+/**
+ * a function to register all subcommands
+ * @category Utils
+ * @public
+ * @async
+ * @function
+ * @name registerSubCommands
+ * @since 1.0.0
+ * @version 1.0.0
+ * @type {Function}
+ * @param {ClientInt} client - The client to register the slash commands to.
+ * @param {string} dir - The directory to search for slash commands.
+ *
+ * @returns {Promise<Collection<string, BaseSubCommandExecutor>>} A promise that resolves to a collection of all the registered slash commands.
+ * @example
+ * ```ts
+ * import { registerSubCommands } from './utils/registerCommands';
+ * import { ClientInt } from './utils/ClientInt';
+ *
+ * const client = new ClientInt();
+ *
+ * registerSubCommands(client, './subcommands');
+ * ```
+ */
+export const registerSubCommands: Function = async (
   client: ClientInt,
-  dir = '../subcommands'
+  dir: string = '../subcommands'
 ): Promise<void> => {
   const filePath = path.join(__dirname, dir);
   const files = await fs.promises.readdir(filePath);
@@ -41,10 +90,10 @@ export const registerSubCommands = async (
       try {
         let BaseSubcommand;
         try {
-          BaseSubcommand = await require(path.join(filePath, file, 'index.ts'))
+          BaseSubcommand = await require(path.join(filePath, file, 'index.js'))
             .default;
         } catch (error) {
-          BaseSubcommand = await require(path.join(filePath, file, 'index.js'))
+          BaseSubcommand = await require(path.join(filePath, file, 'index.ts'))
             .default;
         }
 

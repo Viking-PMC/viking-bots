@@ -1,8 +1,5 @@
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
   ButtonInteraction,
-  ButtonStyle,
   CacheType,
   Client,
   GuildTextBasedChannel,
@@ -10,15 +7,11 @@ import {
 import { AppDataSource } from '../../typeorm';
 import { Application } from '../../typeorm/entities/Application';
 import { ApplicationConfig } from '../../typeorm/entities/ApplicationConfig';
-import { GuildConfig } from '../../typeorm/entities/GuildConfig';
-import { BaseCommand } from '../../utils/BaseCommand';
+import ApplicationsBaseCommand from '../../utils/ApplicationsBaseCommand';
 
-const applicationConfigRepository =
-  AppDataSource.getRepository(ApplicationConfig);
 const applicationRepository = AppDataSource.getRepository(Application);
-const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
-class CloseApplicationButtonCommand extends BaseCommand {
+class CloseApplicationButtonCommand extends ApplicationsBaseCommand {
   constructor() {
     super('close-application');
   }
@@ -27,52 +20,19 @@ class CloseApplicationButtonCommand extends BaseCommand {
   }
 
   async run(client: Client, interaction: ButtonInteraction<CacheType>) {
-    const { guildId, guild, user } = interaction;
+    const { guild, user } = interaction;
 
-    if (!guildId || !guild) {
-      return interaction.reply({
-        content: 'Please use this command in a guild.',
-        ephemeral: true,
-      });
-    }
+    const { application } = (await this.runApplicationsCheck(
+      client,
+      interaction,
+      {
+        createdBy: user.id,
+        status: 'accepted',
+      }
+    )) as { applicationConfig: ApplicationConfig; application: Application };
 
-    const guildConfig = await guildConfigRepository.findOneBy({ guildId });
-    if (!guildConfig) {
-      return interaction.reply({
-        content: 'Please register the guild first.',
-        ephemeral: true,
-      });
-    }
-
-    const applicationConfig = await applicationConfigRepository.findOneBy({
-      guildId,
-    });
-    if (!applicationConfig) {
-      return interaction.reply({
-        content: 'Application plugin is not registered.',
-        ephemeral: true,
-      });
-    }
-    if (!applicationConfig.enabled) {
-      return interaction.reply({
-        content: 'Application plugin is not enabled.',
-        ephemeral: true,
-      });
-    }
-
-    const application = await applicationRepository.findOneBy({
-      createdBy: user.id,
-      status: 'opened',
-    });
-    if (!application) {
-      return interaction.reply({
-        content: 'You do not have an open application.',
-        ephemeral: true,
-      });
-    }
-
-    const channel = guild.channels.cache.get(
-      applicationConfig.channelId
+    const channel = guild!.channels.cache.get(
+      application.channelId
     ) as GuildTextBasedChannel;
     if (!channel) {
       return interaction.reply({

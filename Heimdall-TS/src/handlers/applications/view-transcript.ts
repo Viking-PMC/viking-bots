@@ -4,7 +4,7 @@
 // Path: Heimdall-TS\src\subcommands
 
 // Compare this snippet from Heimdall-TS\src\subcommands\
-import { ButtonInteraction, CacheType, CommandInteraction } from 'discord.js';
+import { ButtonInteraction, CacheType } from 'discord.js';
 import { ClientInt } from '../../utils/ClientInt';
 import BaseSubCommandExecutor from '../../utils/BaseSubcommandExecutor';
 import { Group } from '../../utils/BaseSlashSubCommand';

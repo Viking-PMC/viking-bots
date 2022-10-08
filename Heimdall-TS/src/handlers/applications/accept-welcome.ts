@@ -10,16 +10,12 @@ import {
 import { AppDataSource } from '../../typeorm';
 import { Application } from '../../typeorm/entities/Application';
 import { ApplicationConfig } from '../../typeorm/entities/ApplicationConfig';
-import { GuildConfig } from '../../typeorm/entities/GuildConfig';
-import { BaseCommand } from '../../utils/BaseCommand';
+import ApplicationsBaseCommand from '../../utils/ApplicationsBaseCommand';
 import { getRanks } from '../../utils/Helpers';
 
-const applicationConfigRepository =
-  AppDataSource.getRepository(ApplicationConfig);
 const applicationRepository = AppDataSource.getRepository(Application);
-const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
-class AcceptWelcomeButtonCommand extends BaseCommand {
+class AcceptWelcomeButtonCommand extends ApplicationsBaseCommand {
   constructor() {
     super('accept-welcome');
   }
@@ -28,48 +24,16 @@ class AcceptWelcomeButtonCommand extends BaseCommand {
   }
 
   async run(client: Client, interaction: ButtonInteraction<CacheType>) {
-    const { guildId, guild, user } = interaction;
+    let { guildId, guild, user } = interaction;
 
-    if (!guildId || !guild) {
-      return interaction.reply({
-        content: 'Please use this command in a guild.',
-        ephemeral: true,
-      });
-    }
-
-    const guildConfig = await guildConfigRepository.findOneBy({ guildId });
-    if (!guildConfig) {
-      return interaction.reply({
-        content: 'Please register the guild first.',
-        ephemeral: true,
-      });
-    }
-
-    const applicationConfig = await applicationConfigRepository.findOneBy({
-      guildId,
-    });
-    if (!applicationConfig) {
-      return interaction.reply({
-        content: 'Application plugin is not registered.',
-        ephemeral: true,
-      });
-    }
-    if (!applicationConfig.enabled) {
-      return interaction.reply({
-        content: 'Application plugin is not enabled.',
-        ephemeral: true,
-      });
-    }
-
-    const application = await applicationRepository.findOneBy({
-      createdBy: user.id,
-      status: 'opened',
-    });
-
-    if (!application) {
-      console.log('Application not found');
-      return;
-    }
+    const { applicationConfig, application } = (await this.runApplicationsCheck(
+      client,
+      interaction,
+      {
+        createdBy: user.id,
+        status: 'accepted',
+      }
+    )) as { applicationConfig: ApplicationConfig; application: Application };
 
     if (user.id === application.createdBy) {
       await applicationRepository.update(
@@ -78,7 +42,7 @@ class AcceptWelcomeButtonCommand extends BaseCommand {
       );
 
       const channel = (await client.channels.fetch(
-        applicationConfig.channelId
+        application.channelId
       )) as GuildTextBasedChannel;
 
       await channel.edit({
@@ -88,7 +52,7 @@ class AcceptWelcomeButtonCommand extends BaseCommand {
             id: applicationConfig.role,
           },
           { allow: ['ViewChannel', 'SendMessages'], id: client.user!.id },
-          { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+          { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
         ],
       });
       await channel.send({
@@ -114,7 +78,7 @@ class AcceptWelcomeButtonCommand extends BaseCommand {
         ranks.some((r) => r.name === role.name)
       );
 
-      const member = await guild.members.fetch(user.id);
+      const member = await guild!.members.fetch(user.id);
       member?.roles.add(guildRanks?.find((g) => g.name === ranks[1].name)!);
     } else {
       return interaction.reply({

@@ -1,26 +1,12 @@
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonInteraction,
-  ButtonStyle,
-  CacheType,
-  ChannelType,
-  Client,
-} from 'discord.js';
-import { applicationQuestions } from '../../schema/application';
+import { ButtonInteraction, CacheType, ChannelType, Client } from 'discord.js';
 import { AppDataSource } from '../../typeorm';
-import { Application } from '../../typeorm/entities/Application';
-
-import { GuildConfig } from '../../typeorm/entities/GuildConfig';
 import { Ticket } from '../../typeorm/entities/Ticket';
 import { TicketConfig } from '../../typeorm/entities/TicketConfig';
-import { BaseCommand } from '../../utils/BaseCommand';
+import TicketsBaseCommand from '../../utils/TicketsBaseCommand';
 
-const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
-const ticketConfigRepository = AppDataSource.getRepository(TicketConfig);
 const ticketRepository = AppDataSource.getRepository(Ticket);
 
-class CreateTicketButtonCommand extends BaseCommand {
+class CreateTicketButtonCommand extends TicketsBaseCommand {
   constructor() {
     super('create-ticket');
   }
@@ -29,45 +15,14 @@ class CreateTicketButtonCommand extends BaseCommand {
   }
   // open a ticket
   async run(client: Client, interaction: ButtonInteraction<CacheType>) {
-    const { guildId, guild, user } = interaction;
-    if (!guildId || !guild) {
-      return interaction.reply({
-        content: 'Please use this command in a guild.',
-        ephemeral: true,
-      });
-    }
-    const guildConfig = guildConfigRepository.findOneBy({ guildId });
-    if (!guildConfig) {
-      return interaction.reply({
-        content: 'Please register the guild first.',
-        ephemeral: true,
-      });
-    }
-    const ticketConfig = await ticketConfigRepository.findOneBy({
-      guildId,
-    });
-    if (!ticketConfig) {
-      return interaction.reply({
-        content: 'Ticket plugin is not registered.',
-        ephemeral: true,
-      });
-    }
-    if (!ticketConfig.enabled) {
-      return interaction.reply({
-        content: 'Ticket plugin is not enabled.',
-        ephemeral: true,
-      });
-    }
-    const ticket = await ticketRepository.findOneBy({
-      createdBy: interaction.user.id,
-      status: 'opened',
-    });
-    if (ticket) {
-      return interaction.reply({
-        content: 'You already have an open ticket.',
-        ephemeral: true,
-      });
-    }
+    const { guildId, guild } = interaction;
+
+    const { ticketConfig }: { ticketConfig: TicketConfig } =
+      (await this.runTicketsCheck(client, interaction, {
+        createdBy: interaction.user.id,
+        status: 'opened',
+      })) as { ticketConfig: TicketConfig };
+
     if (ticketConfig.messageId === interaction.message.id) {
       const newTicket = ticketRepository.create({
         createdBy: interaction.user.id,
@@ -75,7 +30,7 @@ class CreateTicketButtonCommand extends BaseCommand {
 
       const savedTicket = await ticketRepository.save(newTicket);
 
-      const newTicketChannel = await guild.channels.create({
+      const newTicketChannel = await guild!.channels.create({
         name: `ticket-${savedTicket.id.toString()}`,
         type: ChannelType.GuildText,
         parent: ticketConfig.categoryId,
@@ -89,7 +44,7 @@ class CreateTicketButtonCommand extends BaseCommand {
             allow: ['ViewChannel', 'SendMessages'],
             id: ticketConfig.role,
           },
-          { deny: ['ViewChannel', 'SendMessages'], id: guildId },
+          { deny: ['ViewChannel', 'SendMessages'], id: guildId! },
         ],
       });
       const newTicketMessage = await newTicketChannel.send({

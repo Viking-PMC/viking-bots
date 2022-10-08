@@ -19,7 +19,7 @@ const guildConfigRepository = AppDataSource.getRepository(GuildConfig);
 
 export class ApplicationCloseSubCommand extends BaseSubCommandExecutor {
   constructor(baseCommand: string, group: Group) {
-    super(baseCommand, group, 'accept');
+    super(baseCommand, group, 'close');
   }
 
   async run(
