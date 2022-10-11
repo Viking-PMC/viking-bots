@@ -26,7 +26,7 @@ class SpooktoberStatusSubCommand extends BaseSubCommandExecutor {
   }
 
   async run(
-    client: ClientInt,
+    _client: ClientInt,
     interaction: ChatInputCommandInteraction<CacheType>
   ) {
     const { guildId } = interaction;
