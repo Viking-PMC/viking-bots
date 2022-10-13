@@ -48,8 +48,7 @@ class CreateTicketButtonCommand extends TicketsBaseCommand {
         ],
       });
       const newTicketMessage = await newTicketChannel.send({
-        content:
-          'Please explain your issue. A member of tech support will be with you shortly.',
+        content: `Hey ${client.user}, Please explain your issue. A member of tech support will be with you shortly.`,
       });
       ticketRepository.update(
         { id: savedTicket.id },
