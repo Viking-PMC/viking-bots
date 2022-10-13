@@ -14,7 +14,6 @@ class ApplicationSubCommand extends BaseSlashSubCommand {
     return new SlashCommandBuilder()
       .setName('applications')
       .setDescription('Edit Applications Plugin Settings')
-      .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
       .addSubcommand((subcommand) =>
         subcommand
           .setName('enable')

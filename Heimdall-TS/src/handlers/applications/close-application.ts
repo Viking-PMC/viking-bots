@@ -20,13 +20,13 @@ class CloseApplicationButtonCommand extends ApplicationsBaseCommand {
   }
 
   async run(client: Client, interaction: ButtonInteraction<CacheType>) {
-    const { guild, user } = interaction;
+    const { guild } = interaction;
 
     const { application } = (await this.runApplicationsCheck(
       client,
       interaction,
       {
-        createdBy: user.id,
+        channelId: interaction.channelId,
         status: 'accepted',
       }
     )) as { applicationConfig: ApplicationConfig; application: Application };

@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   CacheType,
   ChatInputCommandInteraction,
+  GuildMember,
 } from 'discord.js';
 import { applicationAccepted } from '../../schema/application';
 import { AppDataSource } from '../../typeorm';
@@ -29,7 +30,17 @@ class ApplicationAcceptSubCommand extends BaseSubCommandExecutor {
     _client: ClientInt,
     interaction: ChatInputCommandInteraction<CacheType>
   ) {
-    const { guildId } = interaction;
+    const { guildId, member } = interaction;
+
+    const hasRole = (member as GuildMember).roles.cache.some((role) =>
+      role.name.toLowerCase().includes('personnel')
+    );
+
+    if (!hasRole)
+      return interaction.reply({
+        content: 'You do not have the required role to use this command.',
+        ephemeral: true,
+      });
 
     let guildConfig = await guildConfigRepository.findOneBy({
       guildId: guildId!,
