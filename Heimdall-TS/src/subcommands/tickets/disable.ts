@@ -2,6 +2,7 @@ import {
   CacheType,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  GuildMember,
 } from 'discord.js';
 import { AppDataSource } from '../../typeorm';
 import { GuildConfig } from '../../typeorm/entities/GuildConfig';
@@ -22,7 +23,17 @@ class TicketDisableSubCommand extends BaseSubCommandExecutor {
     _client: ClientInt,
     interaction: ChatInputCommandInteraction<CacheType>
   ): Promise<void> {
-    const { guildId } = interaction;
+    const { guildId, member } = interaction;
+
+    const hasRole = (member as GuildMember).roles.cache.some((role) =>
+      role.name.toLowerCase().includes('tech')
+    );
+
+    if (!hasRole)
+      await interaction.reply({
+        content: 'You do not have the required role to use this command.',
+        ephemeral: true,
+      });
 
     let guildConfig = await guildConfigRepository.findOneBy({
       guildId: guildId!,
