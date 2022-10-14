@@ -14,7 +14,6 @@ class TicketSubCommand extends BaseSlashSubCommand {
     return new SlashCommandBuilder()
       .setName('tickets')
       .setDescription('Edit Ticket Plugin Settings')
-      .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
       .addSubcommand((subcommand) =>
         subcommand
           .setName('enable')
