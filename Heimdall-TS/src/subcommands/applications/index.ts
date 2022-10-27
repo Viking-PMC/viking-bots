@@ -54,6 +54,11 @@ class ApplicationSubCommand extends BaseSlashSubCommand {
       .addSubcommand((subcommand) =>
         subcommand.setName('deny').setDescription('Deny an application')
       )
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName('close')
+          .setDescription('Close an application channel')
+      )
       .toJSON();
   }
 }
