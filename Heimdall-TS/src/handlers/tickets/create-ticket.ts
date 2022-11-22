@@ -31,7 +31,7 @@ class CreateTicketButtonCommand extends TicketsBaseCommand {
       const savedTicket = await ticketRepository.save(newTicket);
 
       const newTicketChannel = await guild!.channels.create({
-        name: `ticket-${savedTicket.id.toString()}`,
+        name: `ticket-${interaction.user.username}`,
         type: ChannelType.GuildText,
         parent: ticketConfig.categoryId,
         permissionOverwrites: [
