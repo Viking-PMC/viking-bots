@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import {
   EmbedBuilder,
   GatewayIntentBits,
+  Partials,
   REST,
   Routes,
   TextChannel,
@@ -34,6 +35,7 @@ const client = new ClientInt({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
   ],
+  partials: [Partials.GuildMember],
 });
 const rest = new REST({ version: '10' }).setToken(BOT_TOKEN!); // **** Means this won't complain about possible undefined.
 
